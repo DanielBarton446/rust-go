@@ -1,6 +1,6 @@
 use crate::stone::*;
-use colored::{Colorize, ColoredString};
-use std::{fmt::Display, ops::Index};
+use colored::Colorize;
+use std::fmt::Display;
 
 pub struct Board {
     state: Vec<Vec<Option<Stone>>>,
@@ -35,7 +35,7 @@ impl Board {
                 if i % padding.len() == 0{
                     let legend = ((idx + 'A' as usize) as u8) as char;
                     // unicode 2503 heavy box vertical
-                    let legend = "\n".to_string() + &legend.to_string() + "┃" + padding;
+                    let legend = legend.to_string() + "┃" + padding;
                     ascii.push(legend.white());
                     // push stones on row
                     for stone in row {
@@ -43,14 +43,16 @@ impl Board {
                         // add whitespace for better looking board
                         ascii.push(padding.white());
                     }
+                    ascii.push("\n".white());
                 }
                 else {
+                    ascii.push(" ┃".white());
                     ascii.push("\n".white());
-                    ascii.push(" ┃".white()) ;
                 }
             }
 
         }
+        ascii.remove(ascii.len() - 1); // remove additional newline
 
         // Add connector
         ascii.push("\n ┗".white());
@@ -72,7 +74,7 @@ impl Board {
         // this is awful. How can we stop the need for cloning?
         let binding = ascii.clone(); 
         let mut chunk = binding.iter();
-        chunk.next(); // skip over first newline
+        chunk.next(); // skip over the legend
         let mut skip_count = 0;
         for val in chunk {
             if val.contains('\n') {
