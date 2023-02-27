@@ -1,6 +1,6 @@
 use crate::stone::*;
-use colored::Colorize;
-use std::fmt::Display;
+use colored::{Colorize, ColoredString};
+use std::{fmt::Display, ops::Index};
 
 pub struct Board {
     state: Vec<Vec<Option<Stone>>>,
@@ -29,40 +29,69 @@ impl Board {
 
     pub fn to_ascii(&self) -> Vec<colored::ColoredString> {
         let mut ascii: Vec<colored::ColoredString> = Vec::new();
+        let padding = "  ";
         for (idx, row) in self.state.iter().enumerate() {
-            let icon = ((idx + 'A' as usize) as u8) as char;
-            // unicode 2503 heavy box vertical
-            let icon = icon.to_string() + "┃ ";
-            ascii.push(icon.white());
-            for stone in row {
-                ascii.push(stone.unwrap().get_icon());
-                // add whitespace for better looking board
-                ascii.push(" ".white());
+            for i in 0..padding.len() {
+                if i % padding.len() == 0{
+                    let legend = ((idx + 'A' as usize) as u8) as char;
+                    // unicode 2503 heavy box vertical
+                    let legend = "\n".to_string() + &legend.to_string() + "┃" + padding;
+                    ascii.push(legend.white());
+                    // push stones on row
+                    for stone in row {
+                        ascii.push(stone.unwrap().get_icon());
+                        // add whitespace for better looking board
+                        ascii.push(padding.white());
+                    }
+                }
+                else {
+                    ascii.push("\n".white());
+                    ascii.push(" ┃".white()) ;
+                }
             }
-            ascii.push("\n".white());
+
         }
 
-        let mut row_len = 0;
-        let mut iter = ascii.iter();
-        while iter.next().unwrap() != &"\n".white() {
-            row_len += 1;
-        }
         // Add connector
-        ascii.push(" ┗".white());
-        for _ in 1..row_len {
+        ascii.push("\n ┗".white());
+        // padding * number of stones, plus the 1 char for each stone
+        let row_len = padding.len() * self.width + self.width;
+        for _ in 0..row_len {
             // add lines for columns
             ascii.push("━".white()); 
         }
+
+        // spacing before column legend
         ascii.push("\n".white());
-        ascii.push("   ".white());
+        for _ in 0..(padding.len() + 2) {
+            ascii.push(" ".white());
+        }
+
+        // column legend
         let mut idx = 1;
-        for i in 1..row_len {
-            if ascii[i] != " ".white(){
-                ascii.push(idx.to_string().white());
-                idx += 1;
+        // this is awful. How can we stop the need for cloning?
+        let binding = ascii.clone(); 
+        let mut chunk = binding.iter();
+        chunk.next(); // skip over first newline
+        let mut skip_count = 0;
+        for val in chunk {
+            if val.contains('\n') {
+                break
             }
-            else {
-                ascii.push(" ".white());
+            for char in val.chars() {
+                // adjust for 2 digit long legend
+                if skip_count > 0 {
+                    skip_count -= 1;
+                    continue;
+                }
+                if char != ' ' {
+                    ascii.push(idx.to_string().white());
+                    idx += 1;
+                    skip_count = idx.to_string().len() - 1;
+                }
+                else {
+                    ascii.push(" ".white());
+                }
             }
         }
 
