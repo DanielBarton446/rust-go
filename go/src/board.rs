@@ -29,14 +29,43 @@ impl Board {
 
     pub fn to_ascii(&self) -> Vec<colored::ColoredString> {
         let mut ascii: Vec<colored::ColoredString> = Vec::new();
-        for row in &self.state {
+        for (idx, row) in self.state.iter().enumerate() {
+            let icon = ((idx + 'A' as usize) as u8) as char;
+            // unicode 2503 heavy box vertical
+            let icon = icon.to_string() + "┃ ";
+            ascii.push(icon.white());
             for stone in row {
                 ascii.push(stone.unwrap().get_icon());
                 // add whitespace for better looking board
-                ascii.push(" ".yellow());
+                ascii.push(" ".white());
             }
             ascii.push("\n".white());
         }
+
+        let mut row_len = 0;
+        let mut iter = ascii.iter();
+        while iter.next().unwrap() != &"\n".white() {
+            row_len += 1;
+        }
+        // Add connector
+        ascii.push(" ┗".white());
+        for _ in 1..row_len {
+            // add lines for columns
+            ascii.push("━".white()); 
+        }
+        ascii.push("\n".white());
+        ascii.push("   ".white());
+        let mut idx = 1;
+        for i in 1..row_len {
+            if ascii[i] != " ".white(){
+                ascii.push(idx.to_string().white());
+                idx += 1;
+            }
+            else {
+                ascii.push(" ".white());
+            }
+        }
+
         ascii
     }
 }
