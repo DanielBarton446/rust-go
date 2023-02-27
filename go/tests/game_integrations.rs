@@ -1,5 +1,5 @@
 use go::{game, stone::Stone};
-use std::io::{self, Cursor};
+use std::io::Cursor;
 
 #[test]
 fn get_move() {

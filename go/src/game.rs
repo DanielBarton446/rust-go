@@ -18,6 +18,7 @@ impl Game {
 
     pub fn start_game(&mut self) {
         loop {
+            self.print_board();
             self.make_move(io::BufReader::new(io::stdin()), &mut io::stdout())
                 .unwrap();
         }
@@ -38,7 +39,11 @@ impl Game {
         // shouldn't unwrap here
         let y = parts.0.chars().next().unwrap() as usize - 'A' as usize;
         let x: usize = parts.1.parse().unwrap();
-        Ok((x, y))
+        Ok((x - 1, y))
+    }
+
+    pub fn print_board(&self) {
+        println!("{}", self.board);
     }
 
     pub fn make_move<R, W>(&mut self, reader: R, writer: &mut W) -> Result<(), String>
