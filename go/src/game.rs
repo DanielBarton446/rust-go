@@ -1,6 +1,6 @@
 use std::{io, usize};
 
-use crate::{board::*, stone::Stone};
+use crate::{board::*, game_move::GameMove, stone::Stone};
 
 pub struct Game {
     pub board: Board,
@@ -8,12 +8,17 @@ pub struct Game {
     // timer: TODO
     // board_history: TODO
     pub turn: bool,
+    pub move_number: usize,
 }
 
 impl Game {
-    pub fn new_game() -> Self {
-        let board = Board::new(9, 9);
-        Game { board, turn: true }
+    pub fn new_game(width: usize, height: usize) -> Self {
+        let board = Board::new(width, height);
+        Game {
+            board,
+            turn: true,
+            move_number: 0,
+        }
     }
 
     pub fn start_game(&mut self) {
@@ -24,7 +29,7 @@ impl Game {
         }
     }
 
-    fn parse_move(mv: String) -> Result<(usize, usize), String> {
+    fn parse_move_position(mv: String) -> Result<((usize, usize)), String> {
         let parts = mv.split_at(1);
 
         // Error if not alphabetic
@@ -54,8 +59,17 @@ impl Game {
         let mv = self.get_move(reader, writer);
         match mv {
             Ok(mv) => {
-                let (x, y) = self::Game::parse_move(mv)?;
-                self.place_stone(x, y);
+                let (x, y) = self::Game::parse_move_position(mv)?;
+                let mut stn = Stone::Empty;
+                if self.turn {
+                    stn = Stone::Black;
+                }
+                else {
+                    stn = Stone::White;
+                }
+                self.move_number += 1;
+                let mv = GameMove::new(stn, (x, y), self.move_number);
+                self.board.update_board_state(&mv);
                 self.turn = !self.turn;
                 Ok(())
             }
@@ -78,15 +92,5 @@ impl Game {
         // writer.write_all(resp.as_bytes()).expect("Failed to write");
 
         Ok(resp.trim().to_ascii_uppercase())
-    }
-
-    fn place_stone(&mut self, x: usize, y: usize) {
-        // This is bad to do in longterm, since something else should be
-        // deciding what color stone is placed
-        if self.turn {
-            self.board.place_stone(x, y, Stone::Black);
-        } else {
-            self.board.place_stone(x, y, Stone::White);
-        }
     }
 }

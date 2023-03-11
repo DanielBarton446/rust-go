@@ -1,9 +1,11 @@
-use crate::stone::*;
+use crate::{stone::*, game_move::GameMove};
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
+use crate::chain::Chain;
 
 pub struct Board {
     state: Vec<Vec<Option<Stone>>>,
+    chains: Vec<Chain>,
     pub width: usize,
     pub height: usize,
 }
@@ -14,13 +16,80 @@ impl Board {
     pub fn new(width: usize, height: usize) -> Self {
         Board {
             state: vec![vec![Some(Stone::Empty); width]; height],
+            chains: Vec::new(),
             width,
             height,
         }
     }
 
-    pub fn place_stone(&mut self, x: usize, y: usize, stone: Stone) {
-        self.state[y][x] = Some(stone);
+    pub fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+        // let mut liberties: Vec<(usize, usize)> = Vec::new();
+        // for i in self.height.saturating_sub(1)..=(pos.1+1).min(self.height) {
+        //     for j in self.width.saturating_sub(1)..=(pos.0+1).min(self.width) {
+        //         if self.state[i][j].unwrap() == Stone::Empty {
+        //             // TODO: ignore diagonals
+        //             liberties.push((j,i))
+        //         }
+        //     }
+        // }
+        let mut liberties: Vec<(usize, usize)> = Vec::new();
+        if pos.0 > 0
+            && self.in_bounds((pos.0 - 1, pos.1))
+            && self.state[pos.0 - 1][pos.1].unwrap() == Stone::Empty
+        {
+            liberties.push((pos.0 - 1, pos.1))
+        }
+        if pos.1 > 0
+            && self.in_bounds((pos.0, pos.1 - 1))
+            && self.state[pos.0][pos.1 - 1].unwrap() == Stone::Empty
+        {
+            liberties.push((pos.0, pos.1 - 1))
+        }
+        if self.in_bounds((pos.0 + 1, pos.1))
+            && self.state[pos.0 + 1][pos.1].unwrap() == Stone::Empty
+        {
+            liberties.push((pos.0 + 1, pos.1))
+        }
+        if self.in_bounds((pos.0, pos.1 + 1))
+            && self.state[pos.0][pos.1 + 1].unwrap() == Stone::Empty
+        {
+            liberties.push((pos.0, pos.1 + 1))
+        }
+
+        liberties
+    }
+
+    pub fn in_bounds(&self, mv: (usize, usize)) -> bool {
+        // usize representing board space, so no need to check >= 0
+        mv.0 < self.width - 1 && mv.1 < self.height - 1
+    }
+
+    pub fn update_board_state(&mut self, mv: &GameMove) {
+        self.place_stone(mv);
+        // This really sucks to need to do
+        for c in &self.chains {
+            if c.is_dead_chain() {
+                for pos in &c.group {
+                    self.state[pos.0][pos.1] = Some(Stone::Empty);
+                } 
+            }
+        }
+    }
+
+    fn place_stone(&mut self, mv: &GameMove) {
+        self.state[mv.pos.1][mv.pos.0] = Some(mv.stone);
+        let libs = self.get_liberties_of_pos(mv.pos);
+        let mut joined_existing_chain = false;
+        for c in &mut self.chains {
+            if c.liberties.contains(&mv.pos){
+                c.place_stone_and_liberties(mv, &libs);
+                joined_existing_chain = true;
+            }
+        }
+        if !joined_existing_chain {
+            let c = Chain::new(mv, &libs);
+            self.chains.push(c);
+        }
     }
 
     pub fn stone_at(&self, x: usize, y: usize) -> Option<Stone> {

@@ -1,5 +1,6 @@
 use colored::Colorize;
 use go::board;
+use go::game_move::GameMove;
 use go::stone::Stone;
 
 #[test]
@@ -24,11 +25,10 @@ fn new_board_add_stone() {
     let mut board = board::Board::new(9, 9);
     let black = Stone::Black;
     let white = Stone::White;
-    board.place_stone(1, 0, black);
-    board.place_stone(1, 1, white);
-    board.place_stone(0, 1, black);
-    board.place_stone(2, 1, black);
-    board.place_stone(1, 2, black);
+    board.update_board_state(&GameMove::new(black, (1,0), 0));
+    board.update_board_state(&GameMove::new(white, (0,1), 0));
+    board.update_board_state(&GameMove::new(black, (2,1), 0));
+    board.update_board_state(&GameMove::new(white, (1,2), 0));
     println!("{board}");
     // assert_eq!(stone, board.stone_at(1, 1).unwrap())
 }
