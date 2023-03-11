@@ -29,7 +29,7 @@ impl Game {
         }
     }
 
-    fn parse_move_position(mv: String) -> Result<((usize, usize)), String> {
+    fn parse_move_position(mv: String) -> Result<(usize, usize), String> {
         let parts = mv.split_at(1);
 
         // Error if not alphabetic
@@ -42,9 +42,9 @@ impl Game {
             return Err("Non-digit second coordinate".to_string());
         }
         // shouldn't unwrap here
-        let y = parts.0.chars().next().unwrap() as usize - 'A' as usize;
-        let x: usize = parts.1.parse().unwrap();
-        Ok((x - 1, y))
+        let row = parts.0.chars().next().unwrap() as usize - 'A' as usize;
+        let col: usize = parts.1.parse().unwrap();
+        Ok((row, col - 1))
     }
 
     pub fn print_board(&self) {
@@ -59,7 +59,7 @@ impl Game {
         let mv = self.get_move(reader, writer);
         match mv {
             Ok(mv) => {
-                let (x, y) = self::Game::parse_move_position(mv)?;
+                let (row, col) = self::Game::parse_move_position(mv)?;
                 let mut stn = Stone::Empty;
                 if self.turn {
                     stn = Stone::Black;
@@ -68,7 +68,7 @@ impl Game {
                     stn = Stone::White;
                 }
                 self.move_number += 1;
-                let mv = GameMove::new(stn, (x, y), self.move_number);
+                let mv = GameMove::new(stn, (row, col), self.move_number);
                 self.board.update_board_state(&mv);
                 self.turn = !self.turn;
                 Ok(())

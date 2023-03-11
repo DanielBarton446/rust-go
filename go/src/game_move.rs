@@ -7,6 +7,7 @@ pub struct GameMove {
 }
 
 impl GameMove {
+    // Should be y,x
     pub fn new(stone: Stone, pos: (usize, usize), move_number: usize) -> Self {
         GameMove {
             stone,

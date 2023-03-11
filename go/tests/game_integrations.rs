@@ -18,7 +18,7 @@ fn make_move() {
     let mut writer: Vec<u8> = vec![];
     game.make_move(reader, &mut writer).unwrap();
     writer.iter().for_each(|b| print!("{}", *b as char));
-    assert_eq!(Stone::Black, game.board.stone_at(0, 0).unwrap());
+    assert_eq!(Stone::Black, game.board.stone_at(0, 0));
 }
 
 #[test]
@@ -30,6 +30,6 @@ fn make_two_moves() {
     game.make_move(reader_1, &mut writer).unwrap();
     game.make_move(reader_2, &mut writer).unwrap();
     writer.iter().for_each(|b| print!("{}", *b as char));
-    assert_eq!(Stone::Black, game.board.stone_at(0, 0).unwrap());
-    assert_eq!(Stone::White, game.board.stone_at(1, 1).unwrap());
+    assert_eq!(Stone::Black, game.board.stone_at(0, 0));
+    assert_eq!(Stone::White, game.board.stone_at(1, 1));
 }

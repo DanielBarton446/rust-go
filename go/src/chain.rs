@@ -14,11 +14,11 @@ impl Chain {
             liberties: HashSet::new(),
             color: mv.stone,
         };
-        c.place_stone_and_liberties(mv, libs);
+        c.place_stone_and_update_liberties(mv, libs);
         c
     }
 
-    pub fn place_stone_and_liberties(
+    pub fn place_stone_and_update_liberties(
         &mut self,
         mv: &GameMove,
         libs: &Vec<(usize, usize)>,

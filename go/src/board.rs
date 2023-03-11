@@ -70,20 +70,23 @@ impl Board {
         for c in &self.chains {
             if c.is_dead_chain() {
                 for pos in &c.group {
-                    self.state[pos.1][pos.0] = Stone::Empty;
+                    self.state[pos.0][pos.1] = Stone::Empty;
                 } 
             }
         }
     }
 
     fn place_stone(&mut self, mv: &GameMove) {
-        self.state[mv.pos.1][mv.pos.0] = mv.stone;
+        self.state[mv.pos.0][mv.pos.1] = mv.stone;
         let libs = self.get_liberties_of_pos(mv.pos);
         let mut joined_existing_chain = false;
         for c in &mut self.chains {
-            if c.liberties.contains(&mv.pos){
-                c.place_stone_and_liberties(mv, &libs);
-                joined_existing_chain = true;
+            if c.liberties.contains(&mv.pos) {
+                c.place_stone_and_update_liberties(mv, &libs);
+                if c.color == mv.stone {
+                    // only if joining ex
+                    joined_existing_chain = true;
+                }
             }
         }
         if !joined_existing_chain {
@@ -92,8 +95,8 @@ impl Board {
         }
     }
 
-    pub fn stone_at(&self, x: usize, y: usize) -> Stone {
-        self.state[y][x]
+    pub fn stone_at(&self, row: usize, col: usize) -> Stone {
+        self.state[row][col]
     }
 
     // This function is awful, primarily because of the fact that
