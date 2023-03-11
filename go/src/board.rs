@@ -4,7 +4,7 @@ use std::fmt::Display;
 use crate::chain::Chain;
 
 pub struct Board {
-    state: Vec<Vec<Option<Stone>>>,
+    state: Vec<Vec<Stone>>,
     chains: Vec<Chain>,
     pub width: usize,
     pub height: usize,
@@ -15,7 +15,7 @@ impl Board {
     /// * `height` - height of board
     pub fn new(width: usize, height: usize) -> Self {
         Board {
-            state: vec![vec![Some(Stone::Empty); width]; height],
+            state: vec![vec![Stone::Empty; width]; height],
             chains: Vec::new(),
             width,
             height,
@@ -35,23 +35,23 @@ impl Board {
         let mut liberties: Vec<(usize, usize)> = Vec::new();
         if pos.0 > 0
             && self.in_bounds((pos.0 - 1, pos.1))
-            && self.state[pos.0 - 1][pos.1].unwrap() == Stone::Empty
+            && self.state[pos.0 - 1][pos.1] == Stone::Empty
         {
             liberties.push((pos.0 - 1, pos.1))
         }
         if pos.1 > 0
             && self.in_bounds((pos.0, pos.1 - 1))
-            && self.state[pos.0][pos.1 - 1].unwrap() == Stone::Empty
+            && self.state[pos.0][pos.1 - 1] == Stone::Empty
         {
             liberties.push((pos.0, pos.1 - 1))
         }
         if self.in_bounds((pos.0 + 1, pos.1))
-            && self.state[pos.0 + 1][pos.1].unwrap() == Stone::Empty
+            && self.state[pos.0 + 1][pos.1] == Stone::Empty
         {
             liberties.push((pos.0 + 1, pos.1))
         }
         if self.in_bounds((pos.0, pos.1 + 1))
-            && self.state[pos.0][pos.1 + 1].unwrap() == Stone::Empty
+            && self.state[pos.0][pos.1 + 1] == Stone::Empty
         {
             liberties.push((pos.0, pos.1 + 1))
         }
@@ -70,14 +70,14 @@ impl Board {
         for c in &self.chains {
             if c.is_dead_chain() {
                 for pos in &c.group {
-                    self.state[pos.0][pos.1] = Some(Stone::Empty);
+                    self.state[pos.1][pos.0] = Stone::Empty;
                 } 
             }
         }
     }
 
     fn place_stone(&mut self, mv: &GameMove) {
-        self.state[mv.pos.1][mv.pos.0] = Some(mv.stone);
+        self.state[mv.pos.1][mv.pos.0] = mv.stone;
         let libs = self.get_liberties_of_pos(mv.pos);
         let mut joined_existing_chain = false;
         for c in &mut self.chains {
@@ -92,7 +92,7 @@ impl Board {
         }
     }
 
-    pub fn stone_at(&self, x: usize, y: usize) -> Option<Stone> {
+    pub fn stone_at(&self, x: usize, y: usize) -> Stone {
         self.state[y][x]
     }
 
@@ -115,7 +115,7 @@ impl Board {
                     ascii.push(legend.white());
                     // push stones on row
                     for stone in row {
-                        ascii.push(stone.unwrap().get_icon());
+                        ascii.push(stone.get_icon());
                         // add whitespace for better looking board
                         ascii.push(padding.white());
                     }
