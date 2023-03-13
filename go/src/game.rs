@@ -1,6 +1,7 @@
 use std::{io, usize};
+use anyhow::{Result, Context};
 
-use crate::{board::*, game_move::GameMove, stone::Stone};
+use crate::{board::*, game_move::GameMove, stone::Stone, ui::get_move};
 
 pub struct Game {
     pub board: Board,
@@ -29,68 +30,29 @@ impl Game {
         }
     }
 
-    fn parse_move_position(mv: String) -> Result<(usize, usize), String> {
-        let parts = mv.split_at(1);
-
-        // Error if not alphabetic
-        if !parts.0.chars().all(char::is_alphabetic) {
-            return Err("Non-alphabetical first coordinate".to_string());
-        }
-
-        // Error if not usize
-        if !parts.1.chars().all(char::is_numeric) {
-            return Err("Non-digit second coordinate".to_string());
-        }
-        // shouldn't unwrap here
-        let row = parts.0.chars().next().unwrap() as usize - 'A' as usize;
-        let col: usize = parts.1.parse().unwrap();
-        Ok((row, col - 1))
-    }
 
     pub fn print_board(&self) {
         println!("{}", self.board);
     }
 
-    pub fn make_move<R, W>(&mut self, reader: R, writer: &mut W) -> Result<(), String>
+    pub fn make_move<R, W>(&mut self, reader: R, writer: &mut W) -> Result<()>
     where
         R: io::BufRead,
         W: io::Write,
     {
-        let mv = self.get_move(reader, writer);
-        match mv {
-            Ok(mv) => {
-                let (row, col) = self::Game::parse_move_position(mv)?;
-                let mut stn = Stone::Empty;
-                if self.turn {
-                    stn = Stone::Black;
-                }
-                else {
-                    stn = Stone::White;
-                }
-                self.move_number += 1;
-                let mv = GameMove::new(stn, (row, col), self.move_number);
-                self.board.update_board_state(&mv);
-                self.turn = !self.turn;
-                Ok(())
-            }
-            io::Result::Err(e) => Err(e.to_string()),
+        let (row, col) = get_move(reader, writer).with_context(|| "Failed to get move")?;
+        let mut stn = Stone::Empty;
+        if self.turn {
+            stn = Stone::Black;
         }
+        else {
+            stn = Stone::White;
+        }
+        self.move_number += 1;
+        let mv = GameMove::new(stn, (row, col), self.move_number);
+        self.board.update_board_state(&mv);
+        self.turn = !self.turn;
+        Ok(())
     }
 
-    pub fn get_move<R, W>(&self, mut reader: R, mut writer: W) -> io::Result<String>
-    where
-        R: io::BufRead,
-        W: io::Write,
-    {
-        let mut resp = String::new();
-        writer
-            .write_all(b"Enter your move:\n")
-            .expect("Failed to write");
-        reader.read_line(&mut resp).expect("Failed to readline");
-        // #[cfg(test)]
-        // This should only run when `cargo test`, but for some reason doesn't work
-        // writer.write_all(resp.as_bytes()).expect("Failed to write");
-
-        Ok(resp.trim().to_ascii_uppercase())
-    }
 }
