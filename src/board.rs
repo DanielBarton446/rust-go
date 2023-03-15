@@ -1,7 +1,7 @@
-use crate::{stone::*, game_move::GameMove};
+use crate::chain::Chain;
+use crate::{game_move::GameMove, stone::*};
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
-use crate::chain::Chain;
 
 pub struct Board {
     state: Vec<Vec<Stone>>,
@@ -45,14 +45,10 @@ impl Board {
         {
             liberties.push((pos.0, pos.1 - 1))
         }
-        if self.in_bounds((pos.0 + 1, pos.1))
-            && self.state[pos.0 + 1][pos.1] == Stone::Empty
-        {
+        if self.in_bounds((pos.0 + 1, pos.1)) && self.state[pos.0 + 1][pos.1] == Stone::Empty {
             liberties.push((pos.0 + 1, pos.1))
         }
-        if self.in_bounds((pos.0, pos.1 + 1))
-            && self.state[pos.0][pos.1 + 1] == Stone::Empty
-        {
+        if self.in_bounds((pos.0, pos.1 + 1)) && self.state[pos.0][pos.1 + 1] == Stone::Empty {
             liberties.push((pos.0, pos.1 + 1))
         }
 
@@ -71,7 +67,7 @@ impl Board {
             if c.is_dead_chain() {
                 for pos in &c.group {
                     self.state[pos.0][pos.1] = Stone::Empty;
-                } 
+                }
             }
         }
     }

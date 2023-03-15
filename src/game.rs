@@ -1,9 +1,8 @@
 use std::{io, usize};
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 
 use crate::{board::*, game_move::GameMove, stone::Stone, ui::get_move};
-
 
 pub struct Game {
     pub board: Board,
@@ -32,12 +31,9 @@ impl Game {
         }
     }
 
-
-
     pub fn print_board(&self) {
         println!("{}", self.board);
     }
-
 
     pub fn make_move<R, W>(&mut self, reader: R, writer: &mut W) -> Result<()>
     where
@@ -48,8 +44,7 @@ impl Game {
         let mut stn = Stone::Empty;
         if self.turn {
             stn = Stone::Black;
-        }
-        else {
+        } else {
             stn = Stone::White;
         }
         self.move_number += 1;
@@ -58,6 +53,4 @@ impl Game {
         self.turn = !self.turn;
         Ok(())
     }
-
-
 }

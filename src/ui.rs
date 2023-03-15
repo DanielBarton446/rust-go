@@ -1,6 +1,6 @@
 //! The ui module should contain all user interaction code. This allows your other code to focus on
 //! game logic rather than handling inputs/outputs.
-use anyhow::{ Result, bail, Context };
+use anyhow::{bail, Context, Result};
 use std::io;
 
 /// Prompts the user for a new move
@@ -13,7 +13,9 @@ where
     writer
         .write_all(b"Enter your move:\n")
         .with_context(|| "Failed to write")?;
-    reader.read_line(&mut resp).with_context(|| "Failed to readline")?;
+    reader
+        .read_line(&mut resp)
+        .with_context(|| "Failed to readline")?;
     // #[cfg(test)]
     // This should only run when `cargo test`, but for some reason doesn't work
     // writer.write_all(resp.as_bytes()).expect("Failed to write");
