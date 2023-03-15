@@ -29,7 +29,7 @@ impl<UI: UserInterface> Game<UI> {
     pub fn start_game(&mut self) -> Result<()> {
         loop {
             if self.game_over {
-                return Ok(())
+                return Ok(());
             }
             self.ui.view(&self.board)?;
             self.update()?;
@@ -39,7 +39,7 @@ impl<UI: UserInterface> Game<UI> {
     fn update(&mut self) -> Result<()> {
         match self.ui.input()? {
             UserAction::Move(row, col) => self.make_move(row, col),
-            UserAction::Quit =>  {
+            UserAction::Quit => {
                 self.game_over = true;
                 Ok(())
             }

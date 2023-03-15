@@ -20,4 +20,3 @@ pub trait UserInterface {
     /// View the model
     fn view(&mut self, board: &Board) -> Result<()>;
 }
-

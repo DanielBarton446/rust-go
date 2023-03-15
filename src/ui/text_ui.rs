@@ -29,7 +29,7 @@ impl<R: Read, W: Write> UserInterface for TextUi<R, W> {
             .with_context(|| "Failed to read input")?;
 
         if inp.trim() == "q" {
-            return Ok(UserAction::Quit)
+            return Ok(UserAction::Quit);
         }
         let mv = parse_move_position(inp)?;
         Ok(UserAction::Move(mv.0, mv.1))
