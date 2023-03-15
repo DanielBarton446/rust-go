@@ -7,14 +7,14 @@ use std::fmt::Display;
 pub struct Board {
     state: Vec<Vec<Stone>>,
     chains: Vec<Chain>,
-    pub width: usize,
-    pub height: usize,
+    pub(crate) width: usize,
+    pub(crate) height: usize,
 }
 
 impl Board {
     /// * `width` - width of board
     /// * `height` - height of board
-    pub fn new(width: usize, height: usize) -> Self {
+    pub(crate) fn new(width: usize, height: usize) -> Self {
         Board {
             state: vec![vec![Stone::Empty; width]; height],
             chains: Vec::new(),
@@ -23,7 +23,7 @@ impl Board {
         }
     }
 
-    pub fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+    pub(crate) fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         // let mut liberties: Vec<(usize, usize)> = Vec::new();
         // for i in self.height.saturating_sub(1)..=(pos.1+1).min(self.height) {
         //     for j in self.width.saturating_sub(1)..=(pos.0+1).min(self.width) {
@@ -56,12 +56,12 @@ impl Board {
         liberties
     }
 
-    pub fn in_bounds(&self, mv: (usize, usize)) -> bool {
+    pub(crate) fn in_bounds(&self, mv: (usize, usize)) -> bool {
         // usize representing board space, so no need to check >= 0
         mv.0 < self.width - 1 && mv.1 < self.height - 1
     }
 
-    pub fn update_board_state(&mut self, mv: &GameMove) {
+    pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
         self.place_stone(mv);
         // This really sucks to need to do
         for c in &self.chains {
@@ -92,14 +92,14 @@ impl Board {
         }
     }
 
-    pub fn stone_at(&self, row: usize, col: usize) -> Stone {
+    pub(crate) fn stone_at(&self, row: usize, col: usize) -> Stone {
         self.state[row][col]
     }
 
     // This function is awful, primarily because of the fact that
     // we have a Vec of strings. Not a vec of chars. Make sizing
     // nightmarish.
-    pub fn to_ascii(&self) -> Vec<colored::ColoredString> {
+    pub(crate) fn to_ascii(&self) -> Vec<colored::ColoredString> {
         let mut ascii: Vec<colored::ColoredString> = Vec::new();
         // legend_max_char_width examples:
         // '5' is 1 char long

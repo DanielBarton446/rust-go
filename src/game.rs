@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::{board::*, game_move::GameMove, stone::Stone, ui::*};
 
@@ -8,8 +8,8 @@ pub struct Game<UI> {
     // players: TODO
     // timer: TODO
     // board_history: TODO
-    pub turn: bool,
-    pub move_number: usize,
+    pub(crate) turn: bool,
+    pub(crate) move_number: usize,
     game_over: bool,
     ui: UI,
 }
@@ -36,7 +36,7 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
-    pub fn update(&mut self) -> Result<()> {
+    fn update(&mut self) -> Result<()> {
         match self.ui.input()? {
             UserAction::Move(row, col) => self.make_move(row, col),
             UserAction::Quit =>  {
