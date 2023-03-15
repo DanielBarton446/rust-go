@@ -1,6 +1,7 @@
 use crate::{game_move::GameMove, stone::Stone};
 use std::collections::HashSet;
 
+#[derive(Debug)]
 pub struct Chain {
     pub group: HashSet<(usize, usize)>,
     pub liberties: HashSet<(usize, usize)>,

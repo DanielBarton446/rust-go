@@ -3,6 +3,7 @@ use crate::{game_move::GameMove, stone::*};
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
 
+#[derive(Debug)]
 pub struct Board {
     state: Vec<Vec<Stone>>,
     chains: Vec<Chain>,

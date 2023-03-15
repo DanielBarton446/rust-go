@@ -1,34 +1,25 @@
-use go::{game, stone::Stone, ui};
-use std::io::Cursor;
+use go::{game::*, stone::Stone, ui::*};
+use std::io::{Cursor, Read, Write};
 
-#[test]
-fn get_move() {
-    let reader = Cursor::new(String::from("a1\n"));
-    let mut writer: Vec<u8> = vec![];
-    let res = ui::get_move(reader, &mut writer);
-    writer.iter().for_each(|b| print!("{}", *b as char));
-    assert_eq!((0, 0), res.unwrap());
+fn setup_game(input: &str) -> Game<TextUi<impl Read, impl Write>> {
+    let reader = Cursor::new(String::from(input));
+    let writer: Vec<u8> = vec![];
+    let ui = TextUi::new(reader, writer);
+    Game::new_game(9, 9, ui)
 }
 
 #[test]
 fn make_move() {
-    let mut game = game::Game::new_game(9, 9);
-    let reader = Cursor::new(String::from("A1\n"));
-    let mut writer: Vec<u8> = vec![];
-    game.make_move(reader, &mut writer).unwrap();
-    writer.iter().for_each(|b| print!("{}", *b as char));
+    let mut game = setup_game("a1\n");
+    game.update().unwrap();
     assert_eq!(Stone::Black, game.board.stone_at(0, 0));
 }
 
 #[test]
 fn make_two_moves() {
-    let mut game = game::Game::new_game(9, 9);
-    let reader_1 = Cursor::new(String::from("A1\n"));
-    let reader_2 = Cursor::new(String::from("B2\n"));
-    let mut writer: Vec<u8> = vec![];
-    game.make_move(reader_1, &mut writer).unwrap();
-    game.make_move(reader_2, &mut writer).unwrap();
-    writer.iter().for_each(|b| print!("{}", *b as char));
+    let mut game = setup_game("a1\nb2\n");
+    game.update().unwrap();
+    game.update().unwrap();
     assert_eq!(Stone::Black, game.board.stone_at(0, 0));
     assert_eq!(Stone::White, game.board.stone_at(1, 1));
 }

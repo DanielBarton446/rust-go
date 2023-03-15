@@ -1,46 +1,52 @@
-use std::{io, usize};
-
 use anyhow::{Context, Result};
 
-use crate::{board::*, game_move::GameMove, stone::Stone, ui::get_move};
+use crate::{board::*, game_move::GameMove, stone::Stone, ui::*};
 
-pub struct Game {
+#[derive(Debug)]
+pub struct Game<UI> {
     pub board: Board,
     // players: TODO
     // timer: TODO
     // board_history: TODO
     pub turn: bool,
     pub move_number: usize,
+    game_over: bool,
+    ui: UI,
 }
 
-impl Game {
-    pub fn new_game(width: usize, height: usize) -> Self {
+impl<UI: UserInterface> Game<UI> {
+    pub fn new_game(width: usize, height: usize, ui: UI) -> Self {
         let board = Board::new(width, height);
         Game {
             board,
             turn: true,
             move_number: 0,
+            game_over: false,
+            ui,
         }
     }
 
-    pub fn start_game(&mut self) {
+    pub fn start_game(&mut self) -> Result<()> {
         loop {
-            self.print_board();
-            self.make_move(io::BufReader::new(io::stdin()), &mut io::stdout())
-                .unwrap();
+            if self.game_over {
+                return Ok(())
+            }
+            self.ui.view(&self.board)?;
+            self.update()?;
         }
     }
 
-    pub fn print_board(&self) {
-        println!("{}", self.board);
+    pub fn update(&mut self) -> Result<()> {
+        match self.ui.input()? {
+            UserAction::Move(row, col) => self.make_move(row, col),
+            UserAction::Quit =>  {
+                self.game_over = true;
+                Ok(())
+            }
+        }
     }
 
-    pub fn make_move<R, W>(&mut self, reader: R, writer: &mut W) -> Result<()>
-    where
-        R: io::BufRead,
-        W: io::Write,
-    {
-        let (row, col) = get_move(reader, writer).with_context(|| "Failed to get move")?;
+    fn make_move(&mut self, row: usize, col: usize) -> Result<()> {
         let stn = if self.turn {
             Stone::Black
         } else {
