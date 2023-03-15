@@ -1,14 +1,13 @@
-use go::{game, stone::Stone};
+use go::{game, stone::Stone, ui};
 use std::io::Cursor;
 
 #[test]
 fn get_move() {
-    let game = game::Game::new_game(9,9);
     let reader = Cursor::new(String::from("a1\n"));
     let mut writer: Vec<u8> = vec![];
-    let res = game.get_move(reader, &mut writer);
+    let res = ui::get_move(reader, &mut writer);
     writer.iter().for_each(|b| print!("{}", *b as char));
-    assert_eq!("A1", res.unwrap());
+    assert_eq!((0, 0), res.unwrap());
 }
 
 #[test]

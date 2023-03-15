@@ -1,3 +1,4 @@
+pub mod ui;
 pub mod board;
 pub mod chain;
 pub mod game;
