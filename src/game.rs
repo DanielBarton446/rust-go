@@ -41,12 +41,11 @@ impl Game {
         W: io::Write,
     {
         let (row, col) = get_move(reader, writer).with_context(|| "Failed to get move")?;
-        let mut stn = Stone::Empty;
-        if self.turn {
-            stn = Stone::Black;
+        let stn = if self.turn {
+            Stone::Black
         } else {
-            stn = Stone::White;
-        }
+            Stone::White
+        };
         self.move_number += 1;
         let mv = GameMove::new(stn, (row, col), self.move_number);
         self.board.update_board_state(&mv);
