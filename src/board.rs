@@ -92,6 +92,7 @@ impl Board {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn stone_at(&self, row: usize, col: usize) -> Stone {
         self.state[row][col]
     }

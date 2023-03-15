@@ -36,7 +36,7 @@ impl<R: Read, W: Write> UserInterface for TextUi<R, W> {
     }
 
     fn view(&mut self, board: &Board) -> Result<()> {
-        write!(self.writer, "{}\n", board).with_context(|| "Failed to prompt user")
+        writeln!(self.writer, "{}", board).with_context(|| "Failed to prompt user")
     }
 }
 
