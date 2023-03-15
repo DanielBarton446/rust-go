@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct Board {
-    state: Vec<Vec<Stone>>,
+    pub(crate) state: Vec<Vec<Stone>>,
     chains: Vec<Chain>,
     pub(crate) width: usize,
     pub(crate) height: usize,
