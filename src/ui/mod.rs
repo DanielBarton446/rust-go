@@ -52,51 +52,43 @@ mod tests {
     // parse_move tests
     #[test]
     fn parse_move_works_uppper_case() {
-        let input = String::from("A1");
-        let res = parse_move_position(input).unwrap();
+        let res = parse_move_position("A1").unwrap();
         assert_eq!((0, 0), res);
     }
 
     #[test]
     fn parse_move_works_lower_case() {
-        let input = String::from("a1");
-        let res = parse_move_position(input).unwrap();
+        let res = parse_move_position("a1").unwrap();
         assert_eq!((0, 0), res);
     }
 
     #[test]
     fn parse_move_solo_alpha_should_error() {
-        let input = String::from("a");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("a").unwrap_err();
     }
 
     #[test]
     fn parse_move_solo_digit_should_error() {
-        let input = String::from("1");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("1").unwrap_err();
     }
 
     #[test]
     fn parse_move_empty_should_error() {
-        let input = String::from("");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("").unwrap_err();
     }
 
     #[test]
     fn parse_move_all_digits_should_error() {
-        let input = String::from("11");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("11").unwrap_err();
     }
 
     #[test]
     fn parse_move_all_alpha_should_error() {
-        let input = String::from("aa");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("aa").unwrap_err();
     }
 
     #[test]
     fn parse_move_extra_char_should_error() {
-        let input = String::from("a1b");
-        parse_move_position(input).unwrap_err();
+        parse_move_position("a1b").unwrap_err();
     }
 }

@@ -19,6 +19,12 @@ impl RawModeUi {
     }
 }
 
+impl Default for RawModeUi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for RawModeUi {
     fn drop(&mut self) {
         disable_raw_mode().unwrap();
