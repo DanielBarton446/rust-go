@@ -185,6 +185,8 @@ impl Display for Board {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -268,8 +270,23 @@ mod tests {
     #[test]
     fn get_liberties_of_corner() {
         let board = Board::new(3, 3);
-        dbg!(&board);
         let libs = board.get_liberties_of_pos((2, 2));
         assert_eq!(libs, vec![(2, 1), (1, 2),])
+    }
+
+    #[test]
+    #[ignore]
+    //TODO: Write the code to merge chains
+    fn merge_chains() {
+        let mut board = Board::new(3, 3);
+        board.update_board_state(&GameMove::new(Stone::Black, (0, 0), 0));
+        board.update_board_state(&GameMove::new(Stone::Black, (0, 2), 0));
+        board.update_board_state(&GameMove::new(Stone::Black, (0, 1), 0));
+        dbg!(&board.chains);
+        assert_eq!(board.chains.len(), 1);
+        assert_eq!(board.chains[0].group.len(), 3);
+        assert!(board.chains[0].group.contains(&(0, 0)));
+        assert!(board.chains[0].group.contains(&(0, 1)));
+        assert!(board.chains[0].group.contains(&(0, 2)));
     }
 }
