@@ -1,19 +1,20 @@
-use crate::{stone::*, game_move::GameMove};
+use crate::chain::Chain;
+use crate::{game_move::GameMove, stone::*};
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
-use crate::chain::Chain;
 
+#[derive(Debug)]
 pub struct Board {
     state: Vec<Vec<Stone>>,
     chains: Vec<Chain>,
-    pub width: usize,
-    pub height: usize,
+    pub(crate) width: usize,
+    pub(crate) height: usize,
 }
 
 impl Board {
     /// * `width` - width of board
     /// * `height` - height of board
-    pub fn new(width: usize, height: usize) -> Self {
+    pub(crate) fn new(width: usize, height: usize) -> Self {
         Board {
             state: vec![vec![Stone::Empty; width]; height],
             chains: Vec::new(),
@@ -22,7 +23,7 @@ impl Board {
         }
     }
 
-    pub fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+    pub(crate) fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         // let mut liberties: Vec<(usize, usize)> = Vec::new();
         // for i in self.height.saturating_sub(1)..=(pos.1+1).min(self.height) {
         //     for j in self.width.saturating_sub(1)..=(pos.0+1).min(self.width) {
@@ -45,33 +46,29 @@ impl Board {
         {
             liberties.push((pos.0, pos.1 - 1))
         }
-        if self.in_bounds((pos.0 + 1, pos.1))
-            && self.state[pos.0 + 1][pos.1] == Stone::Empty
-        {
+        if self.in_bounds((pos.0 + 1, pos.1)) && self.state[pos.0 + 1][pos.1] == Stone::Empty {
             liberties.push((pos.0 + 1, pos.1))
         }
-        if self.in_bounds((pos.0, pos.1 + 1))
-            && self.state[pos.0][pos.1 + 1] == Stone::Empty
-        {
+        if self.in_bounds((pos.0, pos.1 + 1)) && self.state[pos.0][pos.1 + 1] == Stone::Empty {
             liberties.push((pos.0, pos.1 + 1))
         }
 
         liberties
     }
 
-    pub fn in_bounds(&self, mv: (usize, usize)) -> bool {
+    pub(crate) fn in_bounds(&self, mv: (usize, usize)) -> bool {
         // usize representing board space, so no need to check >= 0
         mv.0 < self.width - 1 && mv.1 < self.height - 1
     }
 
-    pub fn update_board_state(&mut self, mv: &GameMove) {
+    pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
         self.place_stone(mv);
         // This really sucks to need to do
         for c in &self.chains {
             if c.is_dead_chain() {
                 for pos in &c.group {
                     self.state[pos.0][pos.1] = Stone::Empty;
-                } 
+                }
             }
         }
     }
@@ -95,14 +92,15 @@ impl Board {
         }
     }
 
-    pub fn stone_at(&self, row: usize, col: usize) -> Stone {
+    #[cfg(test)]
+    pub(crate) fn stone_at(&self, row: usize, col: usize) -> Stone {
         self.state[row][col]
     }
 
     // This function is awful, primarily because of the fact that
     // we have a Vec of strings. Not a vec of chars. Make sizing
     // nightmarish.
-    pub fn to_ascii(&self) -> Vec<colored::ColoredString> {
+    pub(crate) fn to_ascii(&self) -> Vec<colored::ColoredString> {
         let mut ascii: Vec<colored::ColoredString> = Vec::new();
         // legend_max_char_width examples:
         // '5' is 1 char long
@@ -182,5 +180,74 @@ impl Display for Board {
             write!(f, "{}", msg)?
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_board_add_stone() {
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        let white = Stone::White;
+        board.update_board_state(&GameMove::new(black, (1, 0), 0));
+        board.update_board_state(&GameMove::new(white, (0, 1), 0));
+        board.update_board_state(&GameMove::new(black, (2, 1), 0));
+        board.update_board_state(&GameMove::new(white, (1, 2), 0));
+        assert_eq!(black, board.stone_at(1, 0));
+        assert_eq!(black, board.stone_at(2, 1));
+        assert_eq!(white, board.stone_at(0, 1));
+        assert_eq!(white, board.stone_at(1, 2));
+    }
+
+    #[test]
+    fn dead_corner_stone() {
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        let white = Stone::White;
+        board.update_board_state(&GameMove::new(black, (0, 0), 0));
+        board.update_board_state(&GameMove::new(white, (0, 1), 1));
+        board.update_board_state(&GameMove::new(white, (1, 0), 2));
+        assert_eq!(Stone::Empty, board.stone_at(0, 0));
+        assert_eq!(white, board.stone_at(0, 1));
+        assert_eq!(white, board.stone_at(1, 0));
+    }
+
+    #[test]
+    fn dead_side_stones() {
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        let white = Stone::White;
+        board.update_board_state(&GameMove::new(black, (0, 1), 0));
+        board.update_board_state(&GameMove::new(black, (0, 2), 0));
+        board.update_board_state(&GameMove::new(white, (0, 0), 0));
+        board.update_board_state(&GameMove::new(white, (1, 1), 0));
+        board.update_board_state(&GameMove::new(white, (1, 2), 0));
+        board.update_board_state(&GameMove::new(white, (0, 3), 0));
+        assert_eq!(Stone::Empty, board.stone_at(0, 1));
+        assert_eq!(Stone::Empty, board.stone_at(0, 2));
+        assert_eq!(white, board.stone_at(0, 0));
+        assert_eq!(white, board.stone_at(1, 1));
+        assert_eq!(white, board.stone_at(1, 2));
+        assert_eq!(white, board.stone_at(0, 3));
+    }
+
+    #[test]
+    fn dead_center_stone() {
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        let white = Stone::White;
+        board.update_board_state(&GameMove::new(black, (4, 4), 0));
+        board.update_board_state(&GameMove::new(white, (3, 4), 0));
+        board.update_board_state(&GameMove::new(white, (5, 4), 0));
+        board.update_board_state(&GameMove::new(white, (4, 3), 0));
+        board.update_board_state(&GameMove::new(white, (4, 5), 0));
+        assert_eq!(Stone::Empty, board.stone_at(4, 4));
+        assert_eq!(white, board.stone_at(3, 4));
+        assert_eq!(white, board.stone_at(5, 4));
+        assert_eq!(white, board.stone_at(4, 3));
+        assert_eq!(white, board.stone_at(4, 5));
     }
 }

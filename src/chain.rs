@@ -1,7 +1,8 @@
 use crate::{game_move::GameMove, stone::Stone};
 use std::collections::HashSet;
 
-pub struct Chain {
+#[derive(Debug)]
+pub(crate) struct Chain {
     pub group: HashSet<(usize, usize)>,
     pub liberties: HashSet<(usize, usize)>,
     pub color: Stone,
@@ -18,17 +19,12 @@ impl Chain {
         c
     }
 
-    pub fn place_stone_and_update_liberties(
-        &mut self,
-        mv: &GameMove,
-        libs: &Vec<(usize, usize)>,
-    ) -> Result<(), String> {
+    pub fn place_stone_and_update_liberties(&mut self, mv: &GameMove, libs: &Vec<(usize, usize)>) {
         if self.color == mv.stone {
             self.add_stone(mv, libs);
         } else {
             self.remove_liberty(mv.pos);
         }
-        Ok(())
     }
 
     pub fn is_dead_chain(&self) -> bool {

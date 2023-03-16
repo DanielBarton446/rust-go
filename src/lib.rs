@@ -1,9 +1,6 @@
-pub mod ui;
-pub mod board;
-pub mod chain;
+pub(crate) mod board;
+pub(crate) mod chain;
 pub mod game;
-pub mod stone;
-pub mod game_move;
-
-#[cfg(test)]
-pub mod tests {}
+pub(crate) mod game_move;
+pub(crate) mod stone;
+pub mod ui;

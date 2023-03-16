@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-pub trait Icon {
+pub(crate) trait Icon {
     fn get_icon(&self) -> colored::ColoredString;
 }
 

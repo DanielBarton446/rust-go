@@ -1,27 +1,47 @@
-//! The ui module should contain all user interaction code. This allows your other code to focus on
-//! game logic rather than handling inputs/outputs.
-use anyhow::{ Result, bail, Context };
-use std::io;
+use super::*;
+use crate::board::Board;
+use anyhow::{bail, Context, Result};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
-/// Prompts the user for a new move
-pub fn get_move<R, W>(mut reader: R, mut writer: W) -> Result<(usize, usize)>
-where
-    R: io::BufRead,
-    W: io::Write,
-{
-    let mut resp = String::new();
-    writer
-        .write_all(b"Enter your move:\n")
-        .with_context(|| "Failed to write")?;
-    reader.read_line(&mut resp).with_context(|| "Failed to readline")?;
-    // #[cfg(test)]
-    // This should only run when `cargo test`, but for some reason doesn't work
-    // writer.write_all(resp.as_bytes()).expect("Failed to write");
+#[derive(Debug)]
+pub struct TextUi<R: Read, W: Write> {
+    reader: std::io::BufReader<R>,
+    writer: std::io::BufWriter<W>,
+}
 
-    parse_move_position(resp.trim().to_ascii_uppercase())
+impl<R: Read, W: Write> TextUi<R, W> {
+    pub fn new(reader: R, writer: W) -> Self {
+        Self {
+            reader: BufReader::new(reader),
+            writer: BufWriter::new(writer),
+        }
+    }
+}
+
+impl<R: Read, W: Write> UserInterface for TextUi<R, W> {
+    fn input(&mut self) -> Result<UserAction> {
+        write!(self.writer, "Enter a move, or quit (q)")?;
+        self.writer.flush()?;
+
+        let mut inp = String::new();
+        self.reader
+            .read_line(&mut inp)
+            .with_context(|| "Failed to read input")?;
+
+        if inp.trim() == "q" {
+            return Ok(UserAction::Quit);
+        }
+        let mv = parse_move_position(inp)?;
+        Ok(UserAction::Move(mv.0, mv.1))
+    }
+
+    fn view(&mut self, board: &Board) -> Result<()> {
+        writeln!(self.writer, "{}", board).with_context(|| "Failed to prompt user")
+    }
 }
 
 fn parse_move_position(mv: String) -> Result<(usize, usize)> {
+    let mv = mv.trim();
     if mv.len() != 2 {
         bail!("Move should be 2 characters");
     }
@@ -46,6 +66,7 @@ fn parse_move_position(mv: String) -> Result<(usize, usize)> {
 mod tests {
     use super::*;
 
+    // parse_move tests
     #[test]
     fn parse_move_works_uppper_case() {
         let input = String::from("A1");
@@ -94,5 +115,21 @@ mod tests {
     fn parse_move_extra_char_should_error() {
         let input = String::from("a1b");
         parse_move_position(input).unwrap_err();
+    }
+
+    #[test]
+    fn get_move() {
+        let reader = std::io::Cursor::new(String::from("a1\n"));
+        let mut ui = TextUi::new(reader, vec![]);
+        let action = ui.input().unwrap();
+        assert_eq!(UserAction::Move(0, 0), action);
+    }
+
+    #[test]
+    fn get_quit() {
+        let reader = std::io::Cursor::new(String::from("q\n"));
+        let mut ui = TextUi::new(reader, vec![]);
+        let action = ui.input().unwrap();
+        assert_eq!(UserAction::Quit, action);
     }
 }
