@@ -1,7 +1,33 @@
 use super::*;
 use crate::board::Board;
 use anyhow::{Context, Result};
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::*;
+
+/// Wrapper over TextUi to make initialization of the stdin/stdout text ui simpler
+pub struct StdTextUi {
+    ui: TextUi<Stdin, Stdout>,
+}
+
+impl StdTextUi {
+    fn new() -> Self {
+        Self { ui: TextUi::new(stdin(), stdout()) }
+    }
+}
+
+impl Default for StdTextUi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UserInterface for StdTextUi {
+    fn view(&mut self, board: &Board) -> Result<()> {
+        self.ui.view(board)
+    }
+    fn input(&mut self) -> Result<UserAction> {
+        self.ui.input()
+    }
+}
 
 #[derive(Debug)]
 pub struct TextUi<R: Read, W: Write> {

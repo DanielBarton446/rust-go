@@ -23,6 +23,10 @@ impl Board {
         }
     }
 
+    pub fn get_state(&self) -> Vec<&[Stone]> {
+        self.state.iter().map(|v| v.as_slice()).collect()
+    }
+
     pub(crate) fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         // let mut liberties: Vec<(usize, usize)> = Vec::new();
         // for i in self.height.saturating_sub(1)..=(pos.1+1).min(self.height) {

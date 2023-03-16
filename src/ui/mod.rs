@@ -4,7 +4,7 @@
 mod raw_mode_ui;
 mod text_ui;
 pub use raw_mode_ui::RawModeUi;
-pub use text_ui::TextUi;
+pub use text_ui::{TextUi, StdTextUi};
 
 use crate::board::Board;
 use anyhow::{bail, Result};
