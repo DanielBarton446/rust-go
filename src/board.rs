@@ -27,42 +27,38 @@ impl Board {
         self.state.iter().map(|v| v.as_slice()).collect()
     }
 
+    /// Returns the chain's adjacent up/down/left/right squares that are empty
     pub(crate) fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
-        // let mut liberties: Vec<(usize, usize)> = Vec::new();
-        // for i in self.height.saturating_sub(1)..=(pos.1+1).min(self.height) {
-        //     for j in self.width.saturating_sub(1)..=(pos.0+1).min(self.width) {
-        //         if self.state[i][j].unwrap() == Stone::Empty {
-        //             // TODO: ignore diagonals
-        //             liberties.push((j,i))
-        //         }
-        //     }
-        // }
         let mut liberties: Vec<(usize, usize)> = Vec::new();
-        if pos.0 > 0
-            && self.in_bounds((pos.0 - 1, pos.1))
-            && self.state[pos.0 - 1][pos.1] == Stone::Empty
-        {
-            liberties.push((pos.0 - 1, pos.1))
+        let row = pos.0;
+        let col = pos.1;
+
+        // left
+        if col > 0 && self.in_bounds(row, col - 1) && self.state[row][col - 1] == Stone::Empty {
+            liberties.push((row, col - 1))
         }
-        if pos.1 > 0
-            && self.in_bounds((pos.0, pos.1 - 1))
-            && self.state[pos.0][pos.1 - 1] == Stone::Empty
-        {
-            liberties.push((pos.0, pos.1 - 1))
+
+        // right
+        if self.in_bounds(row, col + 1) && self.state[row][col + 1] == Stone::Empty {
+            liberties.push((row, col + 1))
         }
-        if self.in_bounds((pos.0 + 1, pos.1)) && self.state[pos.0 + 1][pos.1] == Stone::Empty {
-            liberties.push((pos.0 + 1, pos.1))
+
+        // up
+        if row > 0 && self.in_bounds(row - 1, col) && self.state[row - 1][col] == Stone::Empty {
+            liberties.push((row - 1, col))
         }
-        if self.in_bounds((pos.0, pos.1 + 1)) && self.state[pos.0][pos.1 + 1] == Stone::Empty {
-            liberties.push((pos.0, pos.1 + 1))
+
+        // down
+        if self.in_bounds(row + 1, col) && self.state[row + 1][col] == Stone::Empty {
+            liberties.push((row + 1, col))
         }
 
         liberties
     }
 
-    pub(crate) fn in_bounds(&self, mv: (usize, usize)) -> bool {
+    pub(crate) fn in_bounds(&self, row: usize, col: usize) -> bool {
         // usize representing board space, so no need to check >= 0
-        mv.0 < self.width - 1 && mv.1 < self.height - 1
+        col < self.width && row < self.height
     }
 
     pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
@@ -253,5 +249,27 @@ mod tests {
         assert_eq!(white, board.stone_at(5, 4));
         assert_eq!(white, board.stone_at(4, 3));
         assert_eq!(white, board.stone_at(4, 5));
+    }
+
+    #[test]
+    fn place_stone_in_corner() {
+        let mut board = Board::new(3, 3);
+        board.place_stone(&GameMove::new(Stone::Black, (2, 2), 0));
+        assert_eq!(board.get_state()[2][2], Stone::Black);
+    }
+
+    #[test]
+    fn update_board_with_corner_move() {
+        let mut board = Board::new(3, 3);
+        board.update_board_state(&GameMove::new(Stone::Black, (2, 2), 0));
+        assert_eq!(board.get_state()[2][2], Stone::Black);
+    }
+
+    #[test]
+    fn get_liberties_of_corner() {
+        let board = Board::new(3, 3);
+        dbg!(&board);
+        let libs = board.get_liberties_of_pos((2, 2));
+        assert_eq!(libs, vec![(2, 1), (1, 2),])
     }
 }

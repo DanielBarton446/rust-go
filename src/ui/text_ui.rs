@@ -10,7 +10,9 @@ pub struct StdTextUi {
 
 impl StdTextUi {
     fn new() -> Self {
-        Self { ui: TextUi::new(stdin(), stdout()) }
+        Self {
+            ui: TextUi::new(stdin(), stdout()),
+        }
     }
 }
 
