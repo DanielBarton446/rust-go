@@ -43,6 +43,7 @@ impl<UI: UserInterface> Game<UI> {
                 self.game_over = true;
                 Ok(())
             }
+            UserAction::Noop => Ok(()),
         }
     }
 

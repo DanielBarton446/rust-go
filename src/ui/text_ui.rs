@@ -1,7 +1,35 @@
 use super::*;
 use crate::board::Board;
-use anyhow::{bail, Context, Result};
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use anyhow::{Context, Result};
+use std::io::*;
+
+/// Wrapper over TextUi to make initialization of the stdin/stdout text ui simpler
+pub struct StdTextUi {
+    ui: TextUi<Stdin, Stdout>,
+}
+
+impl StdTextUi {
+    fn new() -> Self {
+        Self {
+            ui: TextUi::new(stdin(), stdout()),
+        }
+    }
+}
+
+impl Default for StdTextUi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UserInterface for StdTextUi {
+    fn view(&mut self, board: &Board) -> Result<()> {
+        self.ui.view(board)
+    }
+    fn input(&mut self) -> Result<UserAction> {
+        self.ui.input()
+    }
+}
 
 #[derive(Debug)]
 pub struct TextUi<R: Read, W: Write> {
@@ -31,7 +59,7 @@ impl<R: Read, W: Write> UserInterface for TextUi<R, W> {
         if inp.trim() == "q" {
             return Ok(UserAction::Quit);
         }
-        let mv = parse_move_position(inp)?;
+        let mv = parse_move_position(&inp)?;
         Ok(UserAction::Move(mv.0, mv.1))
     }
 
@@ -40,83 +68,9 @@ impl<R: Read, W: Write> UserInterface for TextUi<R, W> {
     }
 }
 
-fn parse_move_position(mv: String) -> Result<(usize, usize)> {
-    let mv = mv.trim();
-    if mv.len() != 2 {
-        bail!("Move should be 2 characters");
-    }
-    let row = mv.as_bytes()[0].to_ascii_uppercase();
-    let col = mv.as_bytes()[1];
-
-    // Error if not alphabetic
-    if !row.is_ascii_alphabetic() {
-        bail!("Non-alphabetical row");
-    }
-    if !col.is_ascii_digit() {
-        bail!("Non-digit column");
-    }
-
-    // shouldn't unwrap here
-    let row = (row - b'A') as usize;
-    let col: usize = (col - b'0') as usize - 1;
-    Ok((row, col))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // parse_move tests
-    #[test]
-    fn parse_move_works_uppper_case() {
-        let input = String::from("A1");
-        let res = parse_move_position(input).unwrap();
-        assert_eq!((0, 0), res);
-    }
-
-    #[test]
-    fn parse_move_works_lower_case() {
-        let input = String::from("a1");
-        let res = parse_move_position(input).unwrap();
-        assert_eq!((0, 0), res);
-    }
-
-    #[test]
-    fn parse_move_solo_alpha_should_error() {
-        let input = String::from("a");
-        parse_move_position(input).unwrap_err();
-    }
-
-    #[test]
-    fn parse_move_solo_digit_should_error() {
-        let input = String::from("1");
-        parse_move_position(input).unwrap_err();
-    }
-
-    #[test]
-    fn parse_move_empty_should_error() {
-        let input = String::from("");
-        parse_move_position(input).unwrap_err();
-    }
-
-    #[test]
-    fn parse_move_all_digits_should_error() {
-        let input = String::from("11");
-        parse_move_position(input).unwrap_err();
-    }
-
-    #[test]
-    fn parse_move_all_alpha_should_error() {
-        let input = String::from("aa");
-        parse_move_position(input).unwrap_err();
-    }
-
-    #[test]
-    fn parse_move_extra_char_should_error() {
-        let input = String::from("a1b");
-        parse_move_position(input).unwrap_err();
-    }
-
     #[test]
     fn get_move() {
         let reader = std::io::Cursor::new(String::from("a1\n"));
