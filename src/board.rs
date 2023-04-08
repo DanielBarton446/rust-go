@@ -185,6 +185,8 @@ impl Display for Board {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::format;
+
     use super::*;
 
     #[test]
@@ -271,5 +273,25 @@ mod tests {
         dbg!(&board);
         let libs = board.get_liberties_of_pos((2, 2));
         assert_eq!(libs, vec![(2, 1), (1, 2),])
+    }
+
+    #[test]
+    fn updates_liberties_after_capture() {
+        let mut board = Board::new(3, 3);
+        let black = Stone::Black;
+        let white = Stone::White;
+        board.update_board_state(&GameMove::new(black, (0, 0), 0));
+        board.update_board_state(&GameMove::new(white, (1, 0), 0));
+        board.update_board_state(&GameMove::new(white, (0, 1), 0));
+        assert_eq!(Stone::Empty, board.stone_at(0, 0));
+        assert_eq!(white, board.stone_at(1, 0));
+        assert_eq!(white, board.stone_at(0, 1));
+
+        dbg!(&board.chains);
+
+        for c in &board.chains{
+            dbg!(c);
+            assert!(c.liberties.contains(&(0,0)));
+        }
     }
 }
