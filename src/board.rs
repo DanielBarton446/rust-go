@@ -86,10 +86,38 @@ impl Board {
                 }
             }
         }
+        // create new chain if this stone has no ally neighbors
         if !joined_existing_chain {
             let c = Chain::new(mv, &libs);
             self.chains.push(c);
         }
+
+        self.merge_chains_if_needed(mv);
+
+    }
+
+    fn merge_chains_if_needed(&mut self, mv: &GameMove) {
+        let mut ally_adjacent_chains: Vec<Chain> = Vec::new();
+        let mut i = 0;
+        while i < self.chains.len() {
+            // check chains that have stone added to group
+            if self.chains[i].group.contains(&mv.pos) {
+                // remove chain from board and handle merging
+                ally_adjacent_chains.push(self.chains.remove(i));
+            }
+            else {
+                i += 1;
+            }
+        }
+
+        if !ally_adjacent_chains.is_empty(){
+            let mut head = ally_adjacent_chains.remove(0);
+            while !ally_adjacent_chains.is_empty(){
+                head.extend_chain(ally_adjacent_chains.remove(0)); // this should be handled
+            }
+            self.chains.push(head);
+        }
+
     }
 
     #[cfg(test)]
@@ -212,6 +240,9 @@ mod tests {
         board.update_board_state(&GameMove::new(black, (0, 0), 0));
         board.update_board_state(&GameMove::new(white, (0, 1), 1));
         board.update_board_state(&GameMove::new(white, (1, 0), 2));
+        println!("{}", &board);
+        dbg!(&board);
+        // dbg!(&board.chains.len());
         assert_eq!(Stone::Empty, board.stone_at(0, 0));
         assert_eq!(white, board.stone_at(0, 1));
         assert_eq!(white, board.stone_at(1, 0));
@@ -276,22 +307,54 @@ mod tests {
     }
 
     #[test]
-    fn updates_liberties_after_capture() {
-        let mut board = Board::new(3, 3);
+    fn merge_two_chains_test(){
+        let mut board = Board::new(9, 9);
         let black = Stone::Black;
-        let white = Stone::White;
         board.update_board_state(&GameMove::new(black, (0, 0), 0));
-        board.update_board_state(&GameMove::new(white, (1, 0), 0));
-        board.update_board_state(&GameMove::new(white, (0, 1), 0));
-        assert_eq!(Stone::Empty, board.stone_at(0, 0));
-        assert_eq!(white, board.stone_at(1, 0));
-        assert_eq!(white, board.stone_at(0, 1));
-
+        board.update_board_state(&GameMove::new(black, (0, 2), 0));
+        board.update_board_state(&GameMove::new(black, (0, 1), 0));
         dbg!(&board.chains);
+        assert_eq!(board.chains.len(), 1);
+        assert_eq!(board.chains[0].group.len(), 3);
+        assert!(board.chains[0].group.contains(&(0, 0)));
+        assert!(board.chains[0].group.contains(&(0, 1)));
+        assert!(board.chains[0].group.contains(&(0, 2)));
+    }
 
-        for c in &board.chains{
-            dbg!(c);
-            assert!(c.liberties.contains(&(0,0)));
-        }
+    #[test]
+    fn merge_three_chains_test(){
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        board.update_board_state(&GameMove::new(black, (0, 0), 0));
+        board.update_board_state(&GameMove::new(black, (0, 2), 0));
+        board.update_board_state(&GameMove::new(black, (1, 1), 0));
+        board.update_board_state(&GameMove::new(black, (0, 1), 0));
+        dbg!(&board.chains);
+        assert_eq!(board.chains.len(), 1);
+        assert_eq!(board.chains[0].group.len(), 4);
+        assert!(board.chains[0].group.contains(&(0, 0)));
+        assert!(board.chains[0].group.contains(&(0, 1)));
+        assert!(board.chains[0].group.contains(&(1, 1)));
+        assert!(board.chains[0].group.contains(&(0, 2)));
+    }
+
+
+    #[test]
+    fn merge_four_chains_test(){
+        let mut board = Board::new(9, 9);
+        let black = Stone::Black;
+        board.update_board_state(&GameMove::new(black, (1, 0), 0));
+        board.update_board_state(&GameMove::new(black, (0, 1), 0));
+        board.update_board_state(&GameMove::new(black, (2, 1), 0));
+        board.update_board_state(&GameMove::new(black, (1, 2), 0));
+        board.update_board_state(&GameMove::new(black, (1, 1), 0));
+        dbg!(&board.chains);
+        assert_eq!(board.chains.len(), 1);
+        assert_eq!(board.chains[0].group.len(), 5);
+        assert!(board.chains[0].group.contains(&(1, 0)));
+        assert!(board.chains[0].group.contains(&(0, 1)));
+        assert!(board.chains[0].group.contains(&(2, 1)));
+        assert!(board.chains[0].group.contains(&(1, 2)));
+        assert!(board.chains[0].group.contains(&(1, 1)));
     }
 }

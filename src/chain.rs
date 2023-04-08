@@ -31,6 +31,16 @@ impl Chain {
         self.liberties.is_empty()
     }
 
+    pub fn extend_chain(&mut self, other: Chain) -> Result<(), String>{
+        // cannot extend chain if colors are different
+        if self.color != other.color {
+            return Err(String::from("Cannot extend a chain with an opponent stone"));
+        }
+        self.group.extend(other.group.into_iter());
+        self.liberties.extend(other.liberties.into_iter());
+        Ok(())
+    }
+
     fn add_stone(&mut self, mv: &GameMove, libs: &Vec<(usize, usize)>) {
         self.group.insert(mv.pos);
         self.liberties.extend(libs);
