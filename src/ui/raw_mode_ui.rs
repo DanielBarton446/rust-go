@@ -1,8 +1,8 @@
 #![allow(unused)]
 use super::*;
 
-use crate::board::Board;
-use crate::stone::Icon;
+use crate::game_logic::board::Board;
+use crate::game_logic::stone::Icon;
 
 use std::io::*;
 

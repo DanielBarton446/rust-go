@@ -1,5 +1,6 @@
-use crate::chain::Chain;
-use crate::{game_move::GameMove, stone::*};
+use crate::game_logic::chain::*;
+use crate::game_logic::game_move::*;
+use crate::game_logic::stone::*;
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
 
@@ -93,7 +94,6 @@ impl Board {
         }
 
         self.merge_chains_if_needed(mv);
-
     }
 
     fn merge_chains_if_needed(&mut self, mv: &GameMove) {
@@ -104,20 +104,18 @@ impl Board {
             if self.chains[i].group.contains(&mv.pos) {
                 // remove chain from board and handle merging
                 ally_adjacent_chains.push(self.chains.remove(i));
-            }
-            else {
+            } else {
                 i += 1;
             }
         }
 
-        if !ally_adjacent_chains.is_empty(){
+        if !ally_adjacent_chains.is_empty() {
             let mut head = ally_adjacent_chains.remove(0);
-            while !ally_adjacent_chains.is_empty(){
+            while !ally_adjacent_chains.is_empty() {
                 head.extend_chain(ally_adjacent_chains.remove(0)); // this should be handled
             }
             self.chains.push(head);
         }
-
     }
 
     #[cfg(test)]
@@ -307,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn merge_two_chains_test(){
+    fn merge_two_chains_test() {
         let mut board = Board::new(9, 9);
         let black = Stone::Black;
         board.update_board_state(&GameMove::new(black, (0, 0), 0));
@@ -322,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn merge_three_chains_test(){
+    fn merge_three_chains_test() {
         let mut board = Board::new(9, 9);
         let black = Stone::Black;
         board.update_board_state(&GameMove::new(black, (0, 0), 0));
@@ -338,9 +336,8 @@ mod tests {
         assert!(board.chains[0].group.contains(&(0, 2)));
     }
 
-
     #[test]
-    fn merge_four_chains_test(){
+    fn merge_four_chains_test() {
         let mut board = Board::new(9, 9);
         let black = Stone::Black;
         board.update_board_state(&GameMove::new(black, (1, 0), 0));

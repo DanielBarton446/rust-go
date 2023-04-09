@@ -1,4 +1,5 @@
-use crate::{game_move::GameMove, stone::Stone};
+use crate::game_logic::game_move::GameMove;
+use crate::game_logic::stone::Stone;
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -31,7 +32,7 @@ impl Chain {
         self.liberties.is_empty()
     }
 
-    pub fn extend_chain(&mut self, other: Chain) -> Result<(), String>{
+    pub fn extend_chain(&mut self, other: Chain) -> Result<(), String> {
         // cannot extend chain if colors are different
         if self.color != other.color {
             return Err(String::from("Cannot extend a chain with an opponent stone"));
