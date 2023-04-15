@@ -1,3 +1,4 @@
+use go::game::Game;
 use go::*;
 use std::collections::VecDeque;
 

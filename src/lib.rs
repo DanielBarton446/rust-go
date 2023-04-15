@@ -1,11 +1,7 @@
-pub(crate) mod board;
-pub(crate) mod chain;
-mod game;
-pub(crate) mod game_move;
-pub(crate) mod stone;
+mod game_logic;
 mod ui;
 
-pub use board::Board;
-pub use game::Game;
-pub use stone::Stone;
+pub use game_logic::board::Board;
+pub use game_logic::game;
+pub use game_logic::stone::Stone;
 pub use ui::*;

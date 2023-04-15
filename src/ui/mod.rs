@@ -6,7 +6,7 @@ mod text_ui;
 pub use raw_mode_ui::RawModeUi;
 pub use text_ui::{StdTextUi, TextUi};
 
-use crate::board::Board;
+use crate::game_logic::board::Board;
 use anyhow::{bail, Result};
 
 #[derive(Debug, PartialEq, Eq)]

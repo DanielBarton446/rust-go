@@ -1,5 +1,5 @@
 use super::*;
-use crate::board::Board;
+use crate::game_logic::board::Board;
 use anyhow::{Context, Result};
 use std::io::*;
 

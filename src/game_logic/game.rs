@@ -1,6 +1,7 @@
 use anyhow::Result;
 
-use crate::{board::*, game_move::GameMove, stone::Stone, ui::*};
+use crate::game_logic::{board::*, game_move::GameMove, stone::Stone};
+use crate::ui::*;
 
 #[derive(Debug)]
 pub struct Game<UI> {

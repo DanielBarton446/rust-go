@@ -1,4 +1,4 @@
-use crate::stone::Stone;
+use crate::game_logic::stone::Stone;
 
 pub struct GameMove {
     pub stone: Stone,
