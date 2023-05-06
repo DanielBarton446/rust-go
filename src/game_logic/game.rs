@@ -207,6 +207,47 @@ mod tests {
         assert_eq!(game.stone_groups.parent[11], 1);
         assert_eq!(game.stone_groups.parent[5], 1);
     }
+
+    #[test]
+    fn merge_four_many_sized_groups() {
+        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
+        game.make_move(0, 2).unwrap();
+        game.turn = !game.turn;
+        game.make_move(1, 2).unwrap();
+        game.turn = !game.turn;
+
+        game.make_move(2, 0).unwrap();
+        game.turn = !game.turn;
+        game.make_move(2, 1).unwrap();
+        game.turn = !game.turn;
+
+        game.make_move(2, 3).unwrap();
+        game.turn = !game.turn;
+        game.make_move(2, 4).unwrap();
+
+        game.turn = !game.turn;
+        game.make_move(3, 2).unwrap();
+        game.turn = !game.turn;
+        game.make_move(4, 2).unwrap();
+
+        game.turn = !game.turn;
+        game.make_move(2, 2).unwrap();
+
+        dbg!("{:?}", &game.stone_groups);
+        // we know that the stone in position (1,2)
+        // is gonna be the representative since it's the
+        // first node scanned for.
+        assert_eq!(game.stone_groups.parent[2], 7);
+        assert_eq!(game.stone_groups.parent[7], 7);
+        assert_eq!(game.stone_groups.parent[10], 7);
+        assert_eq!(game.stone_groups.parent[11], 7);
+        assert_eq!(game.stone_groups.parent[13], 7);
+        assert_eq!(game.stone_groups.parent[14], 7);
+        assert_eq!(game.stone_groups.parent[17], 7);
+        assert_eq!(game.stone_groups.parent[22], 7);
+        assert_eq!(game.stone_groups.parent[12], 7);
+    }
+
     // #[test]
     // fn dead_corner_stone() {
     //     let mut board = Board::new(9, 9);
