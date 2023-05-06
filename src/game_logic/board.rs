@@ -1,4 +1,18 @@
-use crate::game_logic::chain::*;
+// File documentation
+
+/// The purpose of this file is to define the `Board` struct, which is strictly used for representing the state of the game.
+/// This file should not contain any game-specific logic or rules. It solely provides a data structure to represent the board.
+///
+/// The `Board` struct serves as a container for storing information about the current state of the game board.
+/// It is responsible for maintaining the board's dimensions, tracking stone positions, and providing basic operations
+/// for accessing and manipulating the board's state.
+///
+/// This file does not handle game-specific logic, such as capturing stones, determining liberties, or enforcing game rules.
+/// Those responsibilities should be implemented in separate modules or components that interact with the `Board` struct.
+/// This separation of concerns ensures a clear distinction between the game representation and the game rules and logic.
+///
+/// Please note that this file is intended only for representing the game board's state and should not include any gameplay logic.
+/// Game-related operations and rules should be implemented elsewhere in the codebase.
 use crate::game_logic::game_move::*;
 use crate::game_logic::stone::*;
 use colored::{ColoredString, Colorize};
@@ -7,7 +21,6 @@ use std::fmt::Display;
 #[derive(Debug)]
 pub struct Board {
     pub(crate) state: Vec<Vec<Stone>>,
-    chains: Vec<Chain>,
     pub(crate) width: usize,
     pub(crate) height: usize,
 }
@@ -18,104 +31,32 @@ impl Board {
     pub(crate) fn new(width: usize, height: usize) -> Self {
         Board {
             state: vec![vec![Stone::Empty; width]; height],
-            chains: Vec::new(),
             width,
             height,
         }
     }
 
+    /// this flattens the 2d state of the board to a single array
     pub fn get_state(&self) -> Vec<&[Stone]> {
         self.state.iter().map(|v| v.as_slice()).collect()
     }
 
-    /// Returns the chain's adjacent up/down/left/right squares that are empty
-    pub(crate) fn get_liberties_of_pos(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
-        let mut liberties: Vec<(usize, usize)> = Vec::new();
-        let row = pos.0;
-        let col = pos.1;
+    pub fn index_of_pos(&self, pos: (usize, usize)) -> usize {
+        // TODO: sanity check on bounds
 
-        // left
-        if col > 0 && self.in_bounds(row, col - 1) && self.state[row][col - 1] == Stone::Empty {
-            liberties.push((row, col - 1))
-        }
-
-        // right
-        if self.in_bounds(row, col + 1) && self.state[row][col + 1] == Stone::Empty {
-            liberties.push((row, col + 1))
-        }
-
-        // up
-        if row > 0 && self.in_bounds(row - 1, col) && self.state[row - 1][col] == Stone::Empty {
-            liberties.push((row - 1, col))
-        }
-
-        // down
-        if self.in_bounds(row + 1, col) && self.state[row + 1][col] == Stone::Empty {
-            liberties.push((row + 1, col))
-        }
-
-        liberties
-    }
-
-    pub(crate) fn in_bounds(&self, row: usize, col: usize) -> bool {
-        // usize representing board space, so no need to check >= 0
-        col < self.width && row < self.height
-    }
-
-    pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
-        self.place_stone(mv);
-        // This really sucks to need to do
-        for c in &self.chains {
-            if c.is_dead_chain() {
-                for pos in &c.group {
-                    self.state[pos.0][pos.1] = Stone::Empty;
-                }
-            }
-        }
+        pos.0 * self.width + pos.1
     }
 
     fn place_stone(&mut self, mv: &GameMove) {
-        self.state[mv.pos.0][mv.pos.1] = mv.stone;
-        let libs = self.get_liberties_of_pos(mv.pos);
-        let mut joined_existing_chain = false;
-        for c in &mut self.chains {
-            if c.liberties.contains(&mv.pos) {
-                c.place_stone_and_update_liberties(mv, &libs);
-                if c.color == mv.stone {
-                    // only if joining ex
-                    joined_existing_chain = true;
-                }
-            }
-        }
-        // create new chain if this stone has no ally neighbors
-        if !joined_existing_chain {
-            let c = Chain::new(mv, &libs);
-            self.chains.push(c);
-        }
-
-        self.merge_chains_if_needed(mv);
+        // TODO: check bounds
+        let row = mv.pos.0;
+        let col = mv.pos.1;
+        self.state[row][col] = mv.stone;
     }
 
-    fn merge_chains_if_needed(&mut self, mv: &GameMove) {
-        let mut ally_adjacent_chains: Vec<Chain> = Vec::new();
-        let mut i = 0;
-        while i < self.chains.len() {
-            // check chains that have stone added to group
-            if self.chains[i].group.contains(&mv.pos) {
-                // remove chain from board and handle merging
-                ally_adjacent_chains.push(self.chains.remove(i));
-            } else {
-                i += 1;
-            }
-        }
-
-        if !ally_adjacent_chains.is_empty() {
-            let mut head = ally_adjacent_chains.remove(0);
-            while !ally_adjacent_chains.is_empty() {
-                head.extend_chain(ally_adjacent_chains.remove(0)); // this should be handled
-            }
-            self.chains.push(head);
-        }
+    pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
+        // TODO: do more stuff with the game move?
+        self.place_stone(mv);
     }
 
     #[cfg(test)]
@@ -231,58 +172,6 @@ mod tests {
     }
 
     #[test]
-    fn dead_corner_stone() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        let white = Stone::White;
-        board.update_board_state(&GameMove::new(black, (0, 0), 0));
-        board.update_board_state(&GameMove::new(white, (0, 1), 1));
-        board.update_board_state(&GameMove::new(white, (1, 0), 2));
-        println!("{}", &board);
-        dbg!(&board);
-        // dbg!(&board.chains.len());
-        assert_eq!(Stone::Empty, board.stone_at(0, 0));
-        assert_eq!(white, board.stone_at(0, 1));
-        assert_eq!(white, board.stone_at(1, 0));
-    }
-
-    #[test]
-    fn dead_side_stones() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        let white = Stone::White;
-        board.update_board_state(&GameMove::new(black, (0, 1), 0));
-        board.update_board_state(&GameMove::new(black, (0, 2), 0));
-        board.update_board_state(&GameMove::new(white, (0, 0), 0));
-        board.update_board_state(&GameMove::new(white, (1, 1), 0));
-        board.update_board_state(&GameMove::new(white, (1, 2), 0));
-        board.update_board_state(&GameMove::new(white, (0, 3), 0));
-        assert_eq!(Stone::Empty, board.stone_at(0, 1));
-        assert_eq!(Stone::Empty, board.stone_at(0, 2));
-        assert_eq!(white, board.stone_at(0, 0));
-        assert_eq!(white, board.stone_at(1, 1));
-        assert_eq!(white, board.stone_at(1, 2));
-        assert_eq!(white, board.stone_at(0, 3));
-    }
-
-    #[test]
-    fn dead_center_stone() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        let white = Stone::White;
-        board.update_board_state(&GameMove::new(black, (4, 4), 0));
-        board.update_board_state(&GameMove::new(white, (3, 4), 0));
-        board.update_board_state(&GameMove::new(white, (5, 4), 0));
-        board.update_board_state(&GameMove::new(white, (4, 3), 0));
-        board.update_board_state(&GameMove::new(white, (4, 5), 0));
-        assert_eq!(Stone::Empty, board.stone_at(4, 4));
-        assert_eq!(white, board.stone_at(3, 4));
-        assert_eq!(white, board.stone_at(5, 4));
-        assert_eq!(white, board.stone_at(4, 3));
-        assert_eq!(white, board.stone_at(4, 5));
-    }
-
-    #[test]
     fn place_stone_in_corner() {
         let mut board = Board::new(3, 3);
         board.place_stone(&GameMove::new(Stone::Black, (2, 2), 0));
@@ -294,64 +183,5 @@ mod tests {
         let mut board = Board::new(3, 3);
         board.update_board_state(&GameMove::new(Stone::Black, (2, 2), 0));
         assert_eq!(board.get_state()[2][2], Stone::Black);
-    }
-
-    #[test]
-    fn get_liberties_of_corner() {
-        let board = Board::new(3, 3);
-        dbg!(&board);
-        let libs = board.get_liberties_of_pos((2, 2));
-        assert_eq!(libs, vec![(2, 1), (1, 2),])
-    }
-
-    #[test]
-    fn merge_two_chains_test() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        board.update_board_state(&GameMove::new(black, (0, 0), 0));
-        board.update_board_state(&GameMove::new(black, (0, 2), 0));
-        board.update_board_state(&GameMove::new(black, (0, 1), 0));
-        dbg!(&board.chains);
-        assert_eq!(board.chains.len(), 1);
-        assert_eq!(board.chains[0].group.len(), 3);
-        assert!(board.chains[0].group.contains(&(0, 0)));
-        assert!(board.chains[0].group.contains(&(0, 1)));
-        assert!(board.chains[0].group.contains(&(0, 2)));
-    }
-
-    #[test]
-    fn merge_three_chains_test() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        board.update_board_state(&GameMove::new(black, (0, 0), 0));
-        board.update_board_state(&GameMove::new(black, (0, 2), 0));
-        board.update_board_state(&GameMove::new(black, (1, 1), 0));
-        board.update_board_state(&GameMove::new(black, (0, 1), 0));
-        dbg!(&board.chains);
-        assert_eq!(board.chains.len(), 1);
-        assert_eq!(board.chains[0].group.len(), 4);
-        assert!(board.chains[0].group.contains(&(0, 0)));
-        assert!(board.chains[0].group.contains(&(0, 1)));
-        assert!(board.chains[0].group.contains(&(1, 1)));
-        assert!(board.chains[0].group.contains(&(0, 2)));
-    }
-
-    #[test]
-    fn merge_four_chains_test() {
-        let mut board = Board::new(9, 9);
-        let black = Stone::Black;
-        board.update_board_state(&GameMove::new(black, (1, 0), 0));
-        board.update_board_state(&GameMove::new(black, (0, 1), 0));
-        board.update_board_state(&GameMove::new(black, (2, 1), 0));
-        board.update_board_state(&GameMove::new(black, (1, 2), 0));
-        board.update_board_state(&GameMove::new(black, (1, 1), 0));
-        dbg!(&board.chains);
-        assert_eq!(board.chains.len(), 1);
-        assert_eq!(board.chains[0].group.len(), 5);
-        assert!(board.chains[0].group.contains(&(1, 0)));
-        assert!(board.chains[0].group.contains(&(0, 1)));
-        assert!(board.chains[0].group.contains(&(2, 1)));
-        assert!(board.chains[0].group.contains(&(1, 2)));
-        assert!(board.chains[0].group.contains(&(1, 1)));
     }
 }
