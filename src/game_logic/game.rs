@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::Result;
 
 use crate::game_logic::{board::*, game_move::GameMove, stone::Stone};
@@ -59,27 +61,37 @@ impl<UI: UserInterface> Game<UI> {
         Ok(())
     }
 
-    fn update_chains(&mut self, mv: &GameMove) {
-        let (row, col) = mv.pos;
-        let manhattan_adjacencies = [
-            (row.checked_sub(1), col.checked_mul(1)),
-            (row.checked_add(1), col.checked_mul(1)),
-            (row.checked_mul(1), col.checked_sub(1)),
-            (row.checked_mul(1), col.checked_add(1)),
-        ];
+    fn update_chains(&mut self, mv: (usize, usize), stone: Stone) {
+        let (start_row, start_col) = mv;
+        let mut stack = vec![(start_row, start_col)];
+        let mut visited = HashSet::new();
 
-        for (r, c) in manhattan_adjacencies {
-            if let (Some(row), Some(col)) = (r, c) {
-                if row >= self.board.width || col >= self.board.height {
-                    // skip if out of bounds
-                    continue;
-                }
+        while let Some((row, col)) = stack.pop() {
+            if visited.contains(&(row, col)) {
+                continue; // skip already visited nodes
+            }
+            visited.insert((row, col));
 
-                let move_index = self.board.index_of_pos(mv.pos);
-                let adjacent_index = self.board.index_of_pos((row, col));
-                if self.board.state[row][col] == mv.stone {
-                    dbg!(move_index, adjacent_index);
-                    self.stone_groups.union(move_index, adjacent_index);
+            let manhattan_adjacencies = [
+                (row.checked_sub(1), col.checked_mul(1)),
+                (row.checked_add(1), col.checked_mul(1)),
+                (row.checked_mul(1), col.checked_sub(1)),
+                (row.checked_mul(1), col.checked_add(1)),
+            ];
+
+            for (r, c) in manhattan_adjacencies {
+                if let (Some(adj_row), Some(adj_col)) = (r, c) {
+                    if adj_row >= self.board.width || adj_col >= self.board.height {
+                        continue; // skip if out of bounds
+                    }
+
+                    let move_index = self.board.index_of_pos(mv);
+                    let adjacent_index = self.board.index_of_pos((adj_row, adj_col));
+                    if self.board.state[adj_row][adj_col] == stone {
+                        dbg!(move_index, adjacent_index);
+                        self.stone_groups.union(move_index, adjacent_index);
+                        stack.push((adj_row, adj_col));
+                    }
                 }
             }
         }
@@ -94,7 +106,7 @@ impl<UI: UserInterface> Game<UI> {
         };
         self.move_number += 1;
         let mv = GameMove::new(stn, (row, col), self.move_number);
-        self.update_chains(&mv);
+        self.update_chains(mv.pos, mv.stone);
         self.board.update_board_state(&mv);
         self.turn = !self.turn;
         Ok(())
@@ -132,7 +144,7 @@ mod tests {
     #[test]
     fn make_two_connecting_moves() {
         // let mut game = setup_game("a1\nb2\n");
-        let mut game: Game<RawModeUi> = Game::new_game(9, 9, Default::default());
+        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
         if let Err(e) = game.make_move(0, 0) {
             panic!("{}", e)
         }
@@ -146,6 +158,54 @@ mod tests {
             game.board.index_of_pos((0, 0)),
             game.board.index_of_pos((0, 1)),
         ));
+    }
+
+    #[test]
+    fn merge_two_chains_together() {
+        // let mut game = setup_game("a1\nb2\n");
+        let mut game: Game<RawModeUi> = Game::new_game(9, 9, Default::default());
+        game.make_move(0, 0).unwrap();
+        game.turn = !game.turn;
+        game.make_move(0, 2).unwrap();
+        game.turn = !game.turn;
+        game.make_move(0, 1).unwrap();
+        assert_eq!(Stone::Black, game.board.stone_at(0, 0));
+        assert_eq!(Stone::Black, game.board.stone_at(0, 1));
+        assert_eq!(Stone::Black, game.board.stone_at(0, 2));
+        assert!(game.stone_groups.connected(
+            game.board.index_of_pos((0, 0)),
+            game.board.index_of_pos((0, 1)),
+        ));
+        assert!(game.stone_groups.connected(
+            game.board.index_of_pos((0, 0)),
+            game.board.index_of_pos((0, 2)),
+        ));
+        assert!(game.stone_groups.connected(
+            game.board.index_of_pos((0, 1)),
+            game.board.index_of_pos((0, 2)),
+        ));
+    }
+
+    #[test]
+    fn merge_two_different_sized_chains_together() {
+        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
+        game.make_move(0, 0).unwrap();
+        game.turn = !game.turn;
+        game.make_move(0, 1).unwrap();
+        game.turn = !game.turn;
+        game.make_move(2, 0).unwrap();
+        game.turn = !game.turn;
+        game.make_move(2, 1).unwrap();
+
+        game.turn = !game.turn;
+        game.make_move(1, 0).unwrap();
+
+        dbg!("{:?}", &game.stone_groups);
+        assert_eq!(game.stone_groups.parent[0], 1);
+        assert_eq!(game.stone_groups.parent[1], 1);
+        assert_eq!(game.stone_groups.parent[10], 1);
+        assert_eq!(game.stone_groups.parent[11], 1);
+        assert_eq!(game.stone_groups.parent[5], 1);
     }
     // #[test]
     // fn dead_corner_stone() {

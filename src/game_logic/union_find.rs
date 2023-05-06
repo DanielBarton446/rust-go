@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub struct UnionFind {
-    parent: Vec<usize>,
+    pub parent: Vec<usize>,
     rank: Vec<usize>, // optimizes "tree" height for quicker lookups.
     size: Vec<usize>, // keep track of size of the chains? do we need this?
 }
