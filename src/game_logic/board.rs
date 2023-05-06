@@ -152,7 +152,6 @@ impl Display for Board {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::format;
 
     use super::*;
 

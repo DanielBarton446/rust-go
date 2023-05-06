@@ -133,9 +133,13 @@ mod tests {
     fn make_two_connecting_moves() {
         // let mut game = setup_game("a1\nb2\n");
         let mut game: Game<RawModeUi> = Game::new_game(9, 9, Default::default());
-        game.make_move(0, 0);
+        if let Err(e) = game.make_move(0, 0) {
+            panic!("{}", e)
+        }
         game.turn = !game.turn;
-        game.make_move(0, 1);
+        if let Err(e) = game.make_move(0, 1) {
+            panic!("{}", e)
+        }
         assert_eq!(Stone::Black, game.board.stone_at(0, 0));
         assert_eq!(Stone::Black, game.board.stone_at(0, 1));
         assert!(game.stone_groups.connected(
