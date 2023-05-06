@@ -2,10 +2,12 @@ use anyhow::Result;
 
 use crate::game_logic::{board::*, game_move::GameMove, stone::Stone};
 use crate::ui::*;
+use crate::union_find::UnionFind;
 
 #[derive(Debug)]
 pub struct Game<UI> {
     pub board: Board,
+    stone_groups: UnionFind,
     // players: TODO
     // timer: TODO
     // board_history: TODO
@@ -18,8 +20,10 @@ pub struct Game<UI> {
 impl<UI: UserInterface> Game<UI> {
     pub fn new_game(width: usize, height: usize, ui: UI) -> Self {
         let board = Board::new(width, height);
+        let stone_groups = UnionFind::new(width * height);
         Game {
             board,
+            stone_groups,
             turn: true,
             move_number: 0,
             game_over: false,
@@ -48,7 +52,41 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
+    fn is_valid_move(&mut self, row: usize, col: usize) -> Result<()> {
+        if self.board.state[row][col] != Stone::Empty {
+            println!("TODO: send back a bloody error heck");
+        }
+        Ok(())
+    }
+
+    fn update_chains(&mut self, mv: &GameMove) {
+        let (row, col) = mv.pos;
+        let manhattan_adjacencies = [
+            (row.checked_sub(1), col.checked_mul(1)),
+            (row.checked_add(1), col.checked_mul(1)),
+            (row.checked_mul(1), col.checked_sub(1)),
+            (row.checked_mul(1), col.checked_add(1)),
+        ];
+
+        for (r, c) in manhattan_adjacencies {
+            if let (Some(row), Some(col)) = (r, c) {
+                if row >= self.board.width || col >= self.board.height {
+                    // skip if out of bounds
+                    continue;
+                }
+
+                let move_index = self.board.index_of_pos(mv.pos);
+                let adjacent_index = self.board.index_of_pos((row, col));
+                if self.board.state[row][col] == mv.stone {
+                    dbg!(move_index, adjacent_index);
+                    self.stone_groups.union(move_index, adjacent_index);
+                }
+            }
+        }
+    }
+
     fn make_move(&mut self, row: usize, col: usize) -> Result<()> {
+        self.is_valid_move(row, col)?;
         let stn = if self.turn {
             Stone::Black
         } else {
@@ -56,6 +94,7 @@ impl<UI: UserInterface> Game<UI> {
         };
         self.move_number += 1;
         let mv = GameMove::new(stn, (row, col), self.move_number);
+        self.update_chains(&mv);
         self.board.update_board_state(&mv);
         self.turn = !self.turn;
         Ok(())
@@ -89,4 +128,70 @@ mod tests {
         assert_eq!(Stone::Black, game.board.stone_at(0, 0));
         assert_eq!(Stone::White, game.board.stone_at(1, 1));
     }
+
+    #[test]
+    fn make_two_connecting_moves() {
+        // let mut game = setup_game("a1\nb2\n");
+        let mut game: Game<RawModeUi> = Game::new_game(9, 9, Default::default());
+        game.make_move(0, 0);
+        game.turn = !game.turn;
+        game.make_move(0, 1);
+        assert_eq!(Stone::Black, game.board.stone_at(0, 0));
+        assert_eq!(Stone::Black, game.board.stone_at(0, 1));
+        assert!(game.stone_groups.connected(
+            game.board.index_of_pos((0, 0)),
+            game.board.index_of_pos((0, 1)),
+        ));
+    }
+    // #[test]
+    // fn dead_corner_stone() {
+    //     let mut board = Board::new(9, 9);
+    //     let black = Stone::Black;
+    //     let white = Stone::White;
+    //     board.update_board_state(&GameMove::new(black, (0, 0), 0));
+    //     board.update_board_state(&GameMove::new(white, (0, 1), 1));
+    //     board.update_board_state(&GameMove::new(white, (1, 0), 2));
+    //     println!("{}", &board);
+    //     dbg!(&board);
+    //     // dbg!(&board.chains.len());
+    //     assert_eq!(Stone::Empty, board.stone_at(0, 0));
+    //     assert_eq!(white, board.stone_at(0, 1));
+    //     assert_eq!(white, board.stone_at(1, 0));
+    // }
+    //
+    // #[test]
+    // fn dead_side_stones() {
+    //     let mut board = Board::new(9, 9);
+    //     let black = Stone::Black;
+    //     let white = Stone::White;
+    //     board.update_board_state(&GameMove::new(black, (0, 1), 0));
+    //     board.update_board_state(&GameMove::new(black, (0, 2), 0));
+    //     board.update_board_state(&GameMove::new(white, (0, 0), 0));
+    //     board.update_board_state(&GameMove::new(white, (1, 1), 0));
+    //     board.update_board_state(&GameMove::new(white, (1, 2), 0));
+    //     board.update_board_state(&GameMove::new(white, (0, 3), 0));
+    //     assert_eq!(Stone::Empty, board.stone_at(0, 1));
+    //     assert_eq!(Stone::Empty, board.stone_at(0, 2));
+    //     assert_eq!(white, board.stone_at(0, 0));
+    //     assert_eq!(white, board.stone_at(1, 1));
+    //     assert_eq!(white, board.stone_at(1, 2));
+    //     assert_eq!(white, board.stone_at(0, 3));
+    // }
+    //
+    // #[test]
+    // fn dead_center_stone() {
+    //     let mut board = Board::new(9, 9);
+    //     let black = Stone::Black;
+    //     let white = Stone::White;
+    //     board.update_board_state(&GameMove::new(black, (4, 4), 0));
+    //     board.update_board_state(&GameMove::new(white, (3, 4), 0));
+    //     board.update_board_state(&GameMove::new(white, (5, 4), 0));
+    //     board.update_board_state(&GameMove::new(white, (4, 3), 0));
+    //     board.update_board_state(&GameMove::new(white, (4, 5), 0));
+    //     assert_eq!(Stone::Empty, board.stone_at(4, 4));
+    //     assert_eq!(white, board.stone_at(3, 4));
+    //     assert_eq!(white, board.stone_at(5, 4));
+    //     assert_eq!(white, board.stone_at(4, 3));
+    //     assert_eq!(white, board.stone_at(4, 5));
+    // }
 }
