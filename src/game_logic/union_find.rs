@@ -11,7 +11,7 @@ impl UnionFind {
     pub fn new(board_size: usize) -> UnionFind {
         let mut parent = Vec::with_capacity(board_size);
         let rank = vec![0; board_size];
-        let size = vec![0; board_size];
+        let size = vec![1; board_size];
 
         for i in 0..board_size {
             parent.push(i);
