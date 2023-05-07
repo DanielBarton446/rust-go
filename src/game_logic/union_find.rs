@@ -36,6 +36,9 @@ impl UnionFind {
             return;
         }
 
+        // self.parent[root_x] = root_y;
+        // self.size[root_y] += self.size[root_x];
+
         match self.rank[root_x].cmp(&self.rank[root_y]) {
             Ordering::Less => {
                 self.parent[root_x] = root_y;
@@ -55,5 +58,26 @@ impl UnionFind {
 
     pub fn connected(&mut self, x: usize, y: usize) -> bool {
         self.find(x) == self.find(y)
+    }
+}
+
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_union() {
+        let mut uf = UnionFind::new(3 * 3);
+        uf.parent = vec![0, 0, 2, 3, 4, 5, 6, 6, 6];
+        uf.size = vec![2, 1, 1, 1, 1, 1, 3, 1, 1];
+        uf.union(4, 1);
+        let expected = vec![4, 0, 2, 3, 4, 5, 6, 6, 6];
+        assert_eq!(uf.parent, expected);
+        assert_eq!(uf.size[4], 3);
+
+        uf.union(4, 7);
+        let expected = vec![4, 0, 2, 3, 4, 5, 4, 6, 6];
+        assert_eq!(uf.parent, expected);
+        assert_eq!(uf.size[4], 6);
     }
 }

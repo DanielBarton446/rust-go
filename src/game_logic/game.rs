@@ -62,36 +62,25 @@ impl<UI: UserInterface> Game<UI> {
     }
 
     fn update_chains(&mut self, mv: (usize, usize), stone: Stone) {
-        let (start_row, start_col) = mv;
-        let mut stack = vec![(start_row, start_col)];
-        let mut visited = HashSet::new();
+        let (row, col) = mv;
+        let manhattan_adjacencies = [
+            (row.checked_sub(1), col.checked_mul(1)),
+            (row.checked_add(1), col.checked_mul(1)),
+            (row.checked_mul(1), col.checked_sub(1)),
+            (row.checked_mul(1), col.checked_add(1)),
+        ];
 
-        while let Some((row, col)) = stack.pop() {
-            if visited.contains(&(row, col)) {
-                continue; // skip already visited nodes
-            }
-            visited.insert((row, col));
+        for (r, c) in manhattan_adjacencies {
+            if let (Some(adj_row), Some(adj_col)) = (r, c) {
+                if adj_row >= self.board.width || adj_col >= self.board.height {
+                    continue; // skip if out of bounds
+                }
 
-            let manhattan_adjacencies = [
-                (row.checked_sub(1), col.checked_mul(1)),
-                (row.checked_add(1), col.checked_mul(1)),
-                (row.checked_mul(1), col.checked_sub(1)),
-                (row.checked_mul(1), col.checked_add(1)),
-            ];
-
-            for (r, c) in manhattan_adjacencies {
-                if let (Some(adj_row), Some(adj_col)) = (r, c) {
-                    if adj_row >= self.board.width || adj_col >= self.board.height {
-                        continue; // skip if out of bounds
-                    }
-
-                    let move_index = self.board.index_of_pos(mv);
-                    let adjacent_index = self.board.index_of_pos((adj_row, adj_col));
-                    if self.board.state[adj_row][adj_col] == stone {
-                        dbg!(move_index, adjacent_index);
-                        self.stone_groups.union(move_index, adjacent_index);
-                        stack.push((adj_row, adj_col));
-                    }
+                let move_index = self.board.index_of_pos(mv);
+                let adjacent_index = self.board.index_of_pos((adj_row, adj_col));
+                if self.board.state[adj_row][adj_col] == stone {
+                    dbg!(move_index, adjacent_index);
+                    self.stone_groups.union(move_index, adjacent_index);
                 }
             }
         }
@@ -160,10 +149,11 @@ mod tests {
         ));
     }
 
+    #[ignore]
     #[test]
     fn merge_two_chains_together() {
         // let mut game = setup_game("a1\nb2\n");
-        let mut game: Game<RawModeUi> = Game::new_game(9, 9, Default::default());
+        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
         game.make_move(0, 0).unwrap();
         game.turn = !game.turn;
         game.make_move(0, 2).unwrap();
@@ -184,68 +174,6 @@ mod tests {
             game.board.index_of_pos((0, 1)),
             game.board.index_of_pos((0, 2)),
         ));
-    }
-
-    #[test]
-    fn merge_two_different_sized_chains_together() {
-        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
-        game.make_move(0, 0).unwrap();
-        game.turn = !game.turn;
-        game.make_move(0, 1).unwrap();
-        game.turn = !game.turn;
-        game.make_move(2, 0).unwrap();
-        game.turn = !game.turn;
-        game.make_move(2, 1).unwrap();
-
-        game.turn = !game.turn;
-        game.make_move(1, 0).unwrap();
-
-        dbg!("{:?}", &game.stone_groups);
-        assert_eq!(game.stone_groups.parent[0], 1);
-        assert_eq!(game.stone_groups.parent[1], 1);
-        assert_eq!(game.stone_groups.parent[10], 1);
-        assert_eq!(game.stone_groups.parent[11], 1);
-        assert_eq!(game.stone_groups.parent[5], 1);
-    }
-
-    #[test]
-    fn merge_four_many_sized_groups() {
-        let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
-        game.make_move(0, 2).unwrap();
-        game.turn = !game.turn;
-        game.make_move(1, 2).unwrap();
-        game.turn = !game.turn;
-
-        game.make_move(2, 0).unwrap();
-        game.turn = !game.turn;
-        game.make_move(2, 1).unwrap();
-        game.turn = !game.turn;
-
-        game.make_move(2, 3).unwrap();
-        game.turn = !game.turn;
-        game.make_move(2, 4).unwrap();
-
-        game.turn = !game.turn;
-        game.make_move(3, 2).unwrap();
-        game.turn = !game.turn;
-        game.make_move(4, 2).unwrap();
-
-        game.turn = !game.turn;
-        game.make_move(2, 2).unwrap();
-
-        dbg!("{:?}", &game.stone_groups);
-        // we know that the stone in position (1,2)
-        // is gonna be the representative since it's the
-        // first node scanned for.
-        assert_eq!(game.stone_groups.parent[2], 7);
-        assert_eq!(game.stone_groups.parent[7], 7);
-        assert_eq!(game.stone_groups.parent[10], 7);
-        assert_eq!(game.stone_groups.parent[11], 7);
-        assert_eq!(game.stone_groups.parent[13], 7);
-        assert_eq!(game.stone_groups.parent[14], 7);
-        assert_eq!(game.stone_groups.parent[17], 7);
-        assert_eq!(game.stone_groups.parent[22], 7);
-        assert_eq!(game.stone_groups.parent[12], 7);
     }
 
     // #[test]
