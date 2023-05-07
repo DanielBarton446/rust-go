@@ -63,10 +63,10 @@ impl UnionFind {
 
 mod tests {
 
-    use super::*;
-
     #[test]
     fn test_union() {
+        use crate::union_find::UnionFind;
+
         let mut uf = UnionFind::new(3 * 3);
         uf.parent = vec![0, 0, 2, 3, 4, 5, 6, 6, 6];
         uf.size = vec![2, 1, 1, 1, 1, 1, 3, 1, 1];
