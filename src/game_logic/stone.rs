@@ -23,3 +23,13 @@ impl Icon for Stone {
         }
     }
 }
+
+impl Stone {
+    pub fn get_opponent(&self) -> Option<Stone> {
+        match &self {
+            Stone::Black => Some(Stone::White),
+            Stone::White => Some(Stone::Black),
+            Stone::Empty => None,
+        }
+    }
+}

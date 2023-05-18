@@ -59,7 +59,7 @@ impl<UI: UserInterface> Game<UI> {
         Ok(())
     }
 
-    fn update_chains(&mut self, mv: (usize, usize), stone: Stone) {
+    fn update_board(&mut self, mv: (usize, usize), stone: Stone) {
         let (row, col) = mv;
         let manhattan_adjacencies = [
             (row.checked_sub(1), col.checked_mul(1)),
@@ -67,7 +67,6 @@ impl<UI: UserInterface> Game<UI> {
             (row.checked_mul(1), col.checked_sub(1)),
             (row.checked_mul(1), col.checked_add(1)),
         ];
-
         for (r, c) in manhattan_adjacencies {
             if let (Some(adj_row), Some(adj_col)) = (r, c) {
                 if adj_row >= self.board.width || adj_col >= self.board.height {
@@ -76,9 +75,22 @@ impl<UI: UserInterface> Game<UI> {
 
                 let move_index = self.board.index_of_pos(mv);
                 let adjacent_index = self.board.index_of_pos((adj_row, adj_col));
-                if self.board.state[adj_row][adj_col] == stone {
-                    dbg!(move_index, adjacent_index);
+                let existing_stone = self.board.state[adj_row][adj_col];
+
+                if existing_stone == stone {
+                    // union update stuff
                     self.stone_groups.union(move_index, adjacent_index);
+                } else if existing_stone == stone.get_opponent().unwrap() {
+                    // remove current move position from this adjacent stones representative chain
+                    self.stone_groups
+                        .remove_liberty_from_chain(adjacent_index, move_index);
+
+                    dbg!("\nHERE\n{}", self.stone_groups.no_liberties(adjacent_index));
+                    if self.stone_groups.no_liberties(adjacent_index) {
+                        // stone here is dead. Update board
+                        // TODO: need to update a prisoners list or something for captures
+                        self.board.state[adj_row][adj_col] = Stone::Empty;
+                    }
                 }
             }
         }
@@ -94,7 +106,7 @@ impl<UI: UserInterface> Game<UI> {
         self.move_number += 1;
         let mv = GameMove::new(stn, (row, col), self.move_number);
         self.create_libs(mv.pos);
-        self.update_chains(mv.pos, mv.stone);
+        self.update_board(mv.pos, mv.stone);
         self.board.update_board_state(&mv);
         self.turn = !self.turn;
         Ok(())
@@ -113,6 +125,9 @@ impl<UI: UserInterface> Game<UI> {
 
         for (r, c) in manhattan_adjacencies {
             if let (Some(adj_row), Some(adj_col)) = (r, c) {
+                if adj_row >= self.board.width || adj_col >= self.board.height {
+                    continue; // skip if out of bounds
+                }
                 libs.push(self.board.index_of_pos((adj_row, adj_col)));
             }
         }
@@ -124,7 +139,7 @@ impl<UI: UserInterface> Game<UI> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::*;
+    use std::{collections::HashSet, io::*};
 
     fn setup_game(input: &str) -> Game<TextUi<impl Read, impl Write>> {
         let reader = Cursor::new(String::from(input));
@@ -195,21 +210,45 @@ mod tests {
         ));
     }
 
-    // #[test]
-    // fn dead_corner_stone() {
-    //     let mut board = Board::new(9, 9);
-    //     let black = Stone::Black;
-    //     let white = Stone::White;
-    //     board.update_board_state(&GameMove::new(black, (0, 0), 0));
-    //     board.update_board_state(&GameMove::new(white, (0, 1), 1));
-    //     board.update_board_state(&GameMove::new(white, (1, 0), 2));
-    //     println!("{}", &board);
-    //     dbg!(&board);
-    //     // dbg!(&board.chains.len());
-    //     assert_eq!(Stone::Empty, board.stone_at(0, 0));
-    //     assert_eq!(white, board.stone_at(0, 1));
-    //     assert_eq!(white, board.stone_at(1, 0));
-    // }
+    #[test]
+    fn dead_corner_stone() {
+        let mut game: Game<RawModeUi> = Game::new_game(3, 3, Default::default());
+        game.make_move(0, 0).unwrap();
+        game.make_move(0, 1).unwrap();
+        game.make_move(2, 2).unwrap();
+        game.make_move(1, 0).unwrap();
+        // dbg!(&board.chains.len());
+        // dbg!(&game.board);
+        print!("{}", &game.board);
+        print!("{:?}", &game.stone_groups);
+        // assert_eq!(Stone::Empty, game.board.stone_at(0, 0));
+        let expected_board_state = vec![
+            vec![Stone::Empty, Stone::White, Stone::Empty],
+            vec![Stone::White, Stone::Empty, Stone::Empty],
+            vec![Stone::Empty, Stone::Empty, Stone::Black],
+        ];
+        assert_eq!(game.board.state, expected_board_state);
+    }
+
+    #[test]
+    fn correct_liberty_assignments() {
+        let mut game: Game<RawModeUi> = Game::new_game(3, 3, Default::default());
+        game.make_move(0, 0).unwrap();
+        game.make_move(1, 1).unwrap();
+        game.make_move(2, 2).unwrap();
+
+        // beginning of array
+        let expected_libs = HashSet::from_iter(vec![1, 3]);
+        assert_eq!(game.stone_groups.liberties[0], expected_libs);
+
+        // middle of board
+        let expected_libs = HashSet::from_iter(vec![1, 3, 5, 7]);
+        assert_eq!(game.stone_groups.liberties[4], expected_libs);
+
+        // end of array
+        let expected_libs = HashSet::from_iter(vec![5, 7]);
+        assert_eq!(game.stone_groups.liberties[8], expected_libs);
+    }
     //
     // #[test]
     // fn dead_side_stones() {

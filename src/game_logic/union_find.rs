@@ -5,7 +5,7 @@ pub struct UnionFind {
     pub parent: Vec<usize>,
     rank: Vec<usize>, // optimizes "tree" height for quicker lookups.
     size: Vec<usize>, // keep track of size of the chains? do we need this?
-    liberties: Vec<HashSet<usize>>, // liberties positions of the chain the current index
+    pub liberties: Vec<HashSet<usize>>, // liberties positions of the chain the current index
                       // represents.
 }
 
@@ -51,6 +51,11 @@ impl UnionFind {
         for lib in libs {
             self.liberties[index].insert(lib);
         }
+    }
+
+    pub fn remove_liberty_from_chain(&mut self, victim: usize, perpetrator: usize) {
+        let root_victim = self.find(victim);
+        self.liberties[root_victim].remove(&perpetrator);
     }
 
     pub fn union(&mut self, x: usize, y: usize) {
@@ -107,6 +112,10 @@ impl UnionFind {
 
     pub fn connected(&mut self, x: usize, y: usize) -> bool {
         self.find(x) == self.find(y)
+    }
+
+    pub(crate) fn no_liberties(&self, adjacent_index: usize) -> bool {
+        self.liberties[adjacent_index].is_empty()
     }
 }
 
