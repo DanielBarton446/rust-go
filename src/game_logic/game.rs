@@ -93,10 +93,31 @@ impl<UI: UserInterface> Game<UI> {
         };
         self.move_number += 1;
         let mv = GameMove::new(stn, (row, col), self.move_number);
+        self.create_libs(mv.pos);
         self.update_chains(mv.pos, mv.stone);
         self.board.update_board_state(&mv);
         self.turn = !self.turn;
         Ok(())
+    }
+
+    fn create_libs(&mut self, pos: (usize, usize)) {
+        let (row, col) = pos;
+        let manhattan_adjacencies = [
+            (row.checked_sub(1), col.checked_mul(1)),
+            (row.checked_add(1), col.checked_mul(1)),
+            (row.checked_mul(1), col.checked_sub(1)),
+            (row.checked_mul(1), col.checked_add(1)),
+        ];
+
+        let mut libs: Vec<usize> = Vec::with_capacity(4);
+
+        for (r, c) in manhattan_adjacencies {
+            if let (Some(adj_row), Some(adj_col)) = (r, c) {
+                libs.push(self.board.index_of_pos((adj_row, adj_col)));
+            }
+        }
+        self.stone_groups
+            .initialize_liberties_of_pos(self.board.index_of_pos(pos), libs);
     }
 }
 
