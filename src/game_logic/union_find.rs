@@ -1,6 +1,8 @@
 //! Documentation on the Union Find module
-//!
-//!
+//! This is a datastructure/algorithm used to identify chains of
+//! stones on the Go board. This stucture itself does not have any
+//! knowlede of the game. Strictly used in composition with the game
+//! module to build the game and keep track of chains of stones efficiently.
 use std::{cmp::Ordering, collections::HashSet};
 
 #[derive(Debug)]

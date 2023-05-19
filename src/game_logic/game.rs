@@ -1,6 +1,4 @@
 //! This module represents the game state and is where you can start to play the game.
-//r
-//!
 use anyhow::Result;
 
 use crate::game_logic::{board::*, game_move::GameMove, stone::Stone};
