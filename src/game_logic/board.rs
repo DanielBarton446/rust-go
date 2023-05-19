@@ -18,6 +18,10 @@ use crate::game_logic::stone::*;
 use colored::{ColoredString, Colorize};
 use std::fmt::Display;
 
+/// This is a struct that represents strictly the `board` state for the game.
+///
+/// This struct contains a 2d vector to represent the board, and helpful
+/// fields like width and height.
 #[derive(Debug)]
 pub struct Board {
     pub(crate) state: Vec<Vec<Stone>>,
@@ -41,22 +45,19 @@ impl Board {
         self.state.iter().map(|v| v.as_slice()).collect()
     }
 
+    /// This gets the 1d index given the cartesian coordinates
     pub fn index_of_pos(&self, pos: (usize, usize)) -> usize {
         // TODO: sanity check on bounds
 
         pos.0 * self.width + pos.1
     }
 
-    fn place_stone(&mut self, mv: &GameMove) {
-        // TODO: check bounds
+    /// Simply place the stone onto the board
+    pub(crate) fn place_stone(&mut self, mv: &GameMove) {
+        // TODO: Sanity check for bounds just in case.
         let row = mv.pos.0;
         let col = mv.pos.1;
         self.state[row][col] = mv.stone;
-    }
-
-    pub(crate) fn update_board_state(&mut self, mv: &GameMove) {
-        // TODO: do more stuff with the game move?
-        self.place_stone(mv);
     }
 
     #[cfg(test)]
@@ -64,9 +65,11 @@ impl Board {
         self.state[row][col]
     }
 
-    // This function is awful, primarily because of the fact that
-    // we have a Vec of strings. Not a vec of chars. Make sizing
-    // nightmarish.
+    /// This function is used to pretty print the board to the terminal,
+    /// which is used for the RawModeUI when playing with the TUI.
+    /// This function is awful, primarily because of the fact that
+    /// we have a Vec of strings. Not a vec of chars. Make sizing
+    /// nightmarish.
     pub(crate) fn to_ascii(&self) -> Vec<colored::ColoredString> {
         let mut ascii: Vec<colored::ColoredString> = Vec::new();
         // legend_max_char_width examples:
@@ -142,6 +145,7 @@ impl Board {
 }
 
 impl Display for Board {
+    /// Used for pretty printing of the Board object
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for msg in &self.to_ascii() {
             write!(f, "{}", msg)?
@@ -160,10 +164,10 @@ mod tests {
         let mut board = Board::new(9, 9);
         let black = Stone::Black;
         let white = Stone::White;
-        board.update_board_state(&GameMove::new(black, (1, 0), 0));
-        board.update_board_state(&GameMove::new(white, (0, 1), 0));
-        board.update_board_state(&GameMove::new(black, (2, 1), 0));
-        board.update_board_state(&GameMove::new(white, (1, 2), 0));
+        board.place_stone(&GameMove::new(black, (1, 0), 0));
+        board.place_stone(&GameMove::new(white, (0, 1), 0));
+        board.place_stone(&GameMove::new(black, (2, 1), 0));
+        board.place_stone(&GameMove::new(white, (1, 2), 0));
         assert_eq!(black, board.stone_at(1, 0));
         assert_eq!(black, board.stone_at(2, 1));
         assert_eq!(white, board.stone_at(0, 1));
@@ -180,7 +184,7 @@ mod tests {
     #[test]
     fn update_board_with_corner_move() {
         let mut board = Board::new(3, 3);
-        board.update_board_state(&GameMove::new(Stone::Black, (2, 2), 0));
+        board.place_stone(&GameMove::new(Stone::Black, (2, 2), 0));
         assert_eq!(board.get_state()[2][2], Stone::Black);
     }
 }

@@ -1,3 +1,4 @@
+//! This module represents the game state and is where you can start to play the game.
 use anyhow::Result;
 
 use crate::game_logic::{board::*, game_move::GameMove, stone::Stone};
@@ -18,6 +19,17 @@ pub struct Game<UI> {
 }
 
 impl<UI: UserInterface> Game<UI> {
+    /// Create a new game, specifying the width, height, and UI type
+    /// of the board that you are going to use.
+    ///
+    /// For example:
+    /// ```rust
+    /// use crate::go::game::*;
+    /// use go::RawModeUi;
+    /// let mut game: Game<RawModeUi> = Game::new_game(3, 3, Default::default());
+    /// ```
+    /// This will create a game object with the default option, which
+    /// in our case is the TUI UI.
     pub fn new_game(width: usize, height: usize, ui: UI) -> Self {
         let board = Board::new(width, height);
         let stone_groups = UnionFind::new(width * height);
@@ -31,6 +43,9 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
+    /// Start the game associated with this object.
+    /// Note: This assumes the game will be played like any standard
+    /// game would be played.
     pub fn start_game(&mut self) -> Result<()> {
         loop {
             if self.game_over {
@@ -41,6 +56,8 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
+    /// This function updates the game based on User actions.
+    /// Abstractoin from the UI trait. With OGS(todo), Opponent actions will be listened for
     fn update(&mut self) -> Result<()> {
         match self.ui.input()? {
             UserAction::Move(row, col) => self.make_move(row, col),
@@ -52,13 +69,22 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
-    fn is_valid_move(&mut self, row: usize, col: usize) -> Result<()> {
-        if self.board.state[row][col] != Stone::Empty {
-            println!("TODO: send back a bloody error heck");
-        }
-        Ok(())
+    /// Strictly checkes that you are not placing a stone on an existing stone
+    /// This should also check that row and column are within bounds
+    fn is_valid_move(&mut self, row: usize, col: usize) -> bool {
+        self.board.state[row][col] == Stone::Empty
     }
 
+    /// This function checks the local "neighbors" and dispatches events
+    /// based on different cases.
+    ///
+    /// Cases:
+    /// - If there is a neighboring stone of the same color, we need to
+    /// combine the two stones since they are a connected "chain".
+    /// - If there is a neighboring stone of the opposing color, we need
+    /// to remove the placed stone's position from the opposing stones'
+    /// liberties list. Thereby needing to check for a capture.
+    ///
     fn update_board(&mut self, mv: (usize, usize), stone: Stone) {
         let (row, col) = mv;
         let manhattan_adjacencies = [
@@ -96,8 +122,12 @@ impl<UI: UserInterface> Game<UI> {
         }
     }
 
+    /// This is a helper function that is in charge of updating the game
+    /// based on a move given by a player.
     fn make_move(&mut self, row: usize, col: usize) -> Result<()> {
-        self.is_valid_move(row, col)?;
+        if !self.is_valid_move(row, col) {
+            return Ok(());
+        }
         let stn = if self.turn {
             Stone::Black
         } else {
@@ -107,11 +137,15 @@ impl<UI: UserInterface> Game<UI> {
         let mv = GameMove::new(stn, (row, col), self.move_number);
         self.create_libs(mv.pos);
         self.update_board(mv.pos, mv.stone);
-        self.board.update_board_state(&mv);
+        self.board.place_stone(&mv);
         self.turn = !self.turn;
         Ok(())
     }
 
+    /// This is a helper function for the self.make_move function to initialize
+    /// the liberties for the stone being placed.
+    ///
+    /// We can assume that the move is valid due to make_move checking for validity
     fn create_libs(&mut self, pos: (usize, usize)) {
         let (row, col) = pos;
         let manhattan_adjacencies = [
@@ -168,13 +202,9 @@ mod tests {
     fn make_two_connecting_moves() {
         // let mut game = setup_game("a1\nb2\n");
         let mut game: Game<RawModeUi> = Game::new_game(5, 5, Default::default());
-        if let Err(e) = game.make_move(0, 0) {
-            panic!("{}", e)
-        }
+        game.make_move(0, 0).unwrap();
         game.turn = !game.turn;
-        if let Err(e) = game.make_move(0, 1) {
-            panic!("{}", e)
-        }
+        game.make_move(0, 1).unwrap();
         assert_eq!(Stone::Black, game.board.stone_at(0, 0));
         assert_eq!(Stone::Black, game.board.stone_at(0, 1));
         assert!(game.stone_groups.connected(
@@ -183,7 +213,6 @@ mod tests {
         ));
     }
 
-    #[ignore]
     #[test]
     fn merge_two_chains_together() {
         // let mut game = setup_game("a1\nb2\n");
