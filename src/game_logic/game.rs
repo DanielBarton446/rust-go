@@ -111,7 +111,6 @@ impl<UI: UserInterface> Game<UI> {
                     self.stone_groups
                         .remove_liberty_from_chain(adjacent_index, move_index);
 
-                    dbg!("\nHERE\n{}", self.stone_groups.no_liberties(adjacent_index));
                     if self.stone_groups.no_liberties(adjacent_index) {
                         // stone here is dead. Update board
                         // TODO: need to update a prisoners list or something for captures
@@ -162,7 +161,9 @@ impl<UI: UserInterface> Game<UI> {
                 if adj_row >= self.board.width || adj_col >= self.board.height {
                     continue; // skip if out of bounds
                 }
-                libs.push(self.board.index_of_pos((adj_row, adj_col)));
+                if self.board.state[adj_row][adj_col] == Stone::Empty {
+                    libs.push(self.board.index_of_pos((adj_row, adj_col)));
+                }
             }
         }
         self.stone_groups
@@ -246,15 +247,30 @@ mod tests {
         game.make_move(0, 1).unwrap();
         game.make_move(2, 2).unwrap();
         game.make_move(1, 0).unwrap();
-        // dbg!(&board.chains.len());
-        // dbg!(&game.board);
-        print!("{}", &game.board);
-        print!("{:?}", &game.stone_groups);
-        // assert_eq!(Stone::Empty, game.board.stone_at(0, 0));
+        dbg!("{}", &game.board);
+        dbg!("{:?}", &game.stone_groups);
         let expected_board_state = vec![
             vec![Stone::Empty, Stone::White, Stone::Empty],
             vec![Stone::White, Stone::Empty, Stone::Empty],
             vec![Stone::Empty, Stone::Empty, Stone::Black],
+        ];
+        assert_eq!(game.board.state, expected_board_state);
+    }
+
+    #[test]
+    fn dead_edge_stone() {
+        let mut game: Game<RawModeUi> = Game::new_game(3, 3, Default::default());
+        game.make_move(0, 0).unwrap();
+        game.make_move(0, 1).unwrap();
+        game.make_move(0, 2).unwrap();
+        game.make_move(2, 2).unwrap();
+        game.make_move(1, 1).unwrap();
+        dbg!("{}", &game.board);
+        dbg!("{:?}", &game.stone_groups.liberties);
+        let expected_board_state = vec![
+            vec![Stone::Black, Stone::Empty, Stone::Black],
+            vec![Stone::Empty, Stone::Black, Stone::Empty],
+            vec![Stone::Empty, Stone::Empty, Stone::White],
         ];
         assert_eq!(game.board.state, expected_board_state);
     }
