@@ -1,3 +1,6 @@
+//! Documentation on the Union Find module
+//!
+//!
 use std::{cmp::Ordering, collections::HashSet};
 
 #[derive(Debug)]
@@ -110,6 +113,7 @@ impl UnionFind {
         }
     }
 
+    #[cfg(test)]
     pub fn connected(&mut self, x: usize, y: usize) -> bool {
         self.find(x) == self.find(y)
     }
